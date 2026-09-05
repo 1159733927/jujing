@@ -23,9 +23,8 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 RUN pnpm build
-RUN corepack install --global pnpm@11.7.0
-RUN pnpm -C deepseek-harness install --frozen-lockfile
-RUN pnpm -C deepseek-harness build
+RUN corepack pnpm@11.7.0 -C deepseek-harness install --frozen-lockfile
+RUN corepack pnpm@11.7.0 -C deepseek-harness build
 
 FROM ${NODE_IMAGE} AS api
 WORKDIR /app

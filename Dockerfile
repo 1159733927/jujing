@@ -23,6 +23,7 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 RUN pnpm build
+RUN corepack install --global pnpm@11.7.0
 RUN pnpm -C deepseek-harness install --frozen-lockfile
 RUN pnpm -C deepseek-harness build
 

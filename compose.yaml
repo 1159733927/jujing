@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:16-bookworm
+    image: ${POSTGRES_IMAGE:-postgres:16-bookworm}
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-fengshui}
@@ -19,6 +19,9 @@ services:
     build:
       context: .
       target: api
+      args:
+        NODE_IMAGE: ${NODE_IMAGE:-node:24-bookworm-slim}
+        NGINX_IMAGE: ${NGINX_IMAGE:-nginx:1.27-bookworm}
     restart: unless-stopped
     depends_on:
       db:
@@ -56,6 +59,9 @@ services:
     build:
       context: .
       target: web
+      args:
+        NODE_IMAGE: ${NODE_IMAGE:-node:24-bookworm-slim}
+        NGINX_IMAGE: ${NGINX_IMAGE:-nginx:1.27-bookworm}
     restart: unless-stopped
     depends_on:
       api:
@@ -67,6 +73,9 @@ services:
     build:
       context: .
       target: admin
+      args:
+        NODE_IMAGE: ${NODE_IMAGE:-node:24-bookworm-slim}
+        NGINX_IMAGE: ${NGINX_IMAGE:-nginx:1.27-bookworm}
     restart: unless-stopped
     depends_on:
       api:

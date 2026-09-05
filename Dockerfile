@@ -1,6 +1,9 @@
 # syntax=docker/dockerfile:1.7
 
-FROM node:24-bookworm-slim AS build
+ARG NODE_IMAGE=node:24-bookworm-slim
+ARG NGINX_IMAGE=nginx:1.27-bookworm
+
+FROM ${NODE_IMAGE} AS build
 WORKDIR /app
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
     CI=true
@@ -23,7 +26,7 @@ RUN pnpm build
 RUN pnpm -C deepseek-harness install --frozen-lockfile
 RUN pnpm -C deepseek-harness build
 
-FROM node:24-bookworm-slim AS api
+FROM ${NODE_IMAGE} AS api
 WORKDIR /app
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
     NODE_ENV=production \
@@ -43,10 +46,10 @@ USER node
 EXPOSE 3001
 CMD ["pnpm", "--filter", "@fengshui/api", "start"]
 
-FROM nginx:1.27-bookworm AS web
+FROM ${NGINX_IMAGE} AS web
 COPY infra/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/apps/web/dist /usr/share/nginx/html
 
-FROM nginx:1.27-bookworm AS admin
+FROM ${NGINX_IMAGE} AS admin
 COPY infra/nginx/admin.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/apps/admin/dist /usr/share/nginx/html/admin

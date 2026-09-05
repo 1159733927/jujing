@@ -49,9 +49,10 @@ RUN if [ "$APT_MIRROR_HOST" != "deb.debian.org" ]; then \
   && corepack enable
 
 COPY --from=build --chown=node:node /app /app
+WORKDIR /app/apps/api
 USER node
 EXPOSE 3001
-CMD ["pnpm", "--filter", "@fengshui/api", "start"]
+CMD ["node", "--import", "tsx", "src/index.ts"]
 
 FROM ${NGINX_IMAGE} AS web
 COPY infra/nginx/default.conf /etc/nginx/conf.d/default.conf

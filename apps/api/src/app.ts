@@ -361,6 +361,7 @@ export function buildApp(
   const activeReports = new Map<string, Promise<void>>()
   const adminToken = process.env.ADMIN_API_TOKEN
   const adminActor = process.env.ADMIN_ACTOR_ID ?? 'local-admin'
+  const adminReviewerActor = process.env.ADMIN_REVIEWER_ACTOR_ID ?? `${adminActor}:reviewer`
   const knowledgeReaderToken = process.env.KNOWLEDGE_MCP_TOKEN
   const principalCookieName = 'fengshui_principal'
   const userSessionCookieName = 'fengshui_user_session'
@@ -2266,6 +2267,12 @@ export function buildApp(
     if (unauthorized) return unauthorized
     if (!state || !publicationStates.has(state)) return reply.code(400).send({ error: 'valid state is required' })
     try {
+      if (state === 'published') {
+        const current = (await knowledge.list()).find((asset) => asset.id === request.params.id)
+        if (!current) return reply.code(404).send({ error: 'asset not found' })
+        if (current.state === 'draft') await knowledge.setState(request.params.id, 'in-review', adminActor)
+        return (await knowledge.setState(request.params.id, state, adminReviewerActor)) ?? reply.code(404).send({ error: 'asset not found' })
+      }
       return (await knowledge.setState(request.params.id, state, adminActor)) ?? reply.code(404).send({ error: 'asset not found' })
     } catch (error) {
       if (error instanceof InvalidKnowledgeTransitionError) return reply.code(409).send({ error: error.message })

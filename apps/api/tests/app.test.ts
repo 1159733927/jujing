@@ -464,16 +464,46 @@ describe('admin knowledge authorization', () => {
 
     const directPublication = await app.inject({ method: 'POST', url: `/v1/knowledge/${created.json().id}/state`, headers: authorization, payload: { state: 'published' } })
     expect(directPublication.statusCode).toBe(200)
-    expect(directPublication.json()).toMatchObject({ submittedForReviewBy: 'knowledge-editor', reviewedBy: 'knowledge-editor' })
+    expect(directPublication.json()).toMatchObject({ submittedForReviewBy: 'knowledge-editor', reviewedBy: 'knowledge-editor:reviewer' })
     const list = await app.inject({ method: 'GET', url: '/v1/knowledge', headers: authorization })
     expect(list.statusCode).toBe(200)
     expect(list.json()).toHaveLength(1)
     const publishedSearch = await app.inject({ method: 'GET', url: '/v1/knowledge/search?q=采光' })
     expect(publishedSearch.statusCode).toBe(200)
     expect(publishedSearch.json()).toHaveLength(1)
-    expect(publishedSearch.json()[0]).toMatchObject({ versionId: expect.stringContaining(':v1:'), contentHash: expect.stringMatching(/^[a-f0-9]{64}$/), submittedForReviewBy: 'knowledge-editor', reviewedBy: 'knowledge-editor', publishedBy: 'knowledge-editor' })
+    expect(publishedSearch.json()[0]).toMatchObject({ versionId: expect.stringContaining(':v1:'), contentHash: expect.stringMatching(/^[a-f0-9]{64}$/), submittedForReviewBy: 'knowledge-editor', reviewedBy: 'knowledge-editor:reviewer', publishedBy: 'knowledge-editor:reviewer' })
     const limitedSearch = await app.inject({ method: 'GET', url: '/v1/knowledge/search?q=采光&limit=10' })
     expect(limitedSearch.statusCode).toBe(200)
+    await app.close()
+  })
+
+  it('publishes in-review knowledge from one administrator while keeping distinct audit actors', async () => {
+    vi.stubEnv('ADMIN_API_TOKEN', 'test-admin-token')
+    vi.stubEnv('ADMIN_ACTOR_ID', 'knowledge-editor')
+    vi.stubEnv('ADMIN_REVIEWER_ACTOR_ID', 'knowledge-reviewer')
+    const app = await testApp()
+    const authorization = { authorization: 'Bearer test-admin-token' }
+    const created = await app.inject({ method: 'POST', url: '/v1/knowledge', headers: authorization, payload: { kind: 'article', title: '玄关纳气', sourceLabel: '测试专家', body: '玄关纳气资料', tags: ['玄关'] } })
+    expect(created.statusCode).toBe(201)
+
+    const submitted = await app.inject({ method: 'POST', url: `/v1/knowledge/${created.json().id}/state`, headers: authorization, payload: { state: 'in-review' } })
+    expect(submitted.statusCode).toBe(200)
+
+    const published = await app.inject({ method: 'POST', url: `/v1/knowledge/${created.json().id}/state`, headers: authorization, payload: { state: 'published' } })
+    expect(published.statusCode).toBe(200)
+    expect(published.json()).toMatchObject({
+      state: 'published',
+      submittedForReviewBy: 'knowledge-editor',
+      reviewedBy: 'knowledge-reviewer',
+    })
+    expect(published.json().submittedForReviewBy).not.toBe(published.json().reviewedBy)
+    const versions = await app.inject({ method: 'GET', url: `/v1/knowledge/${created.json().id}/versions`, headers: authorization })
+    expect(versions.statusCode).toBe(200)
+    expect(versions.json()[0]).toMatchObject({
+      submittedForReviewBy: 'knowledge-editor',
+      reviewedBy: 'knowledge-reviewer',
+      publishedBy: 'knowledge-reviewer',
+    })
     await app.close()
   })
 

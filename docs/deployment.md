@@ -47,6 +47,10 @@ Edit `.env` and set:
   hyphen and underscore). Compose interpolates it into `DATABASE_URL`.
 - `ADMIN_API_TOKEN`: long random server-side admin automation token.
 - `ADMIN_USERNAME` / `ADMIN_PASSWORD`: fixed admin console login for the Demo.
+- `ADMIN_ACTOR_ID` / `ADMIN_REVIEWER_ACTOR_ID`: stable server-side identities
+  recorded for editing and publishing audit events. They support the existing
+  immutable audit schema but still represent one administrator workflow; the
+  reviewer actor is not a second account or a separate browser approval step.
 - `KNOWLEDGE_MCP_TOKEN`: long random internal reader token used only by the
   API-spawned knowledge MCP bridge.
 - `DEEPSEEK_API_KEY`: runtime-only DeepSeek key.
@@ -58,9 +62,10 @@ Edit `.env` and set:
   `127.0.0.1` so the admin console is not exposed publicly by default.
 
 Never put real secrets in `.env.example` or any Vite client-side environment
-variable. `ADMIN_API_TOKEN`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `KNOWLEDGE_MCP_TOKEN`, `DEEPSEEK_API_KEY` and
-`DATABASE_URL` are server-only runtime settings. The committed `.gitignore`
-excludes `.env` and `.data`.
+variable. `ADMIN_API_TOKEN`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`,
+`ADMIN_ACTOR_ID`, `ADMIN_REVIEWER_ACTOR_ID`, `KNOWLEDGE_MCP_TOKEN`,
+`DEEPSEEK_API_KEY` and `DATABASE_URL` are server-only runtime settings. The
+committed `.gitignore` excludes `.env` and `.data`.
 
 PostgreSQL integration tests do not call DeepSeek. Use dummy values for unrelated
 runtime variables in test-only shells, and reserve a real `DEEPSEEK_API_KEY` for

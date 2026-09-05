@@ -1,0 +1,22 @@
+node_modules/
+dist/
+/fengshui-report-plugin/lib/
+/services/knowledge-mcp/lib/
+/packages/*/lib/
+output/
+tmp/
+.omx/
+.env
+.env.local
+.env.*.local
+.DS_Store
+.data/
+# Local expert source books and residence case images may contain copyrighted
+# or personal material. Keep them out of the public source repository.
+/*.pdf
+/*.jpg
+/*.jpeg
+/*.png
+# WenZhen screenshots are immutable audit evidence and may contain personal data.
+# They must stay in managed runtime storage, never in Git.
+.data/evidence/wenzhen/

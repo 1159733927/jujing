@@ -1,0 +1,9 @@
+{
+  "name": "@fengshui/knowledge-contracts",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "typecheck": "tsc --noEmit", "build": "tsc --noEmit" },
+  "devDependencies": { "typescript": "^6.0.3" }
+}

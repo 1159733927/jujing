@@ -1,0 +1,27 @@
+{
+  "sampleId": "wenzhen-manual-000",
+  "source": "wenzhen-manual-capture",
+  "capturedAt": "YYYY-MM-DD",
+  "evidenceRef": "local-screenshot-id",
+  "status": "pending-manual-verification",
+  "birth": {
+    "calendarSystem": "solar",
+    "date": "YYYY-MM-DD",
+    "time": "HH:mm",
+    "locationName": "省 市 区县",
+    "longitude": 0,
+    "latitude": 0,
+    "timezone": "Asia/Shanghai",
+    "useTrueSolarTime": true,
+    "dstPolicy": "auto",
+    "dayBoundary": "midnight",
+    "luckMethod": "sect1",
+    "gender": "male"
+  },
+  "expected": {
+    "pillars": ["待", "待", "待", "待"],
+    "correctedLocalTime": "YYYY-MM-DDTHH:mm",
+    "correctionMinutes": 0
+  },
+  "notes": "只填写问真页面真实显示且人工核对过的字段"
+}

@@ -1,0 +1,428 @@
+{
+  "metadata": {
+    "purpose": "Manually captured WenZhen comparison fixtures. Only samples with status verified or accepted-difference are included in diff reports.",
+    "sourceUrl": "https://pcbz.iwzwh.com/#/paipan/index",
+    "schemaVersion": "wenzhen-fixture-v1",
+    "expectedPolicy": "Do not copy this engine's output into expected. Values must come from WenZhen UI screenshots or a reviewed expert note."
+  },
+  "samples": [
+    {
+      "sampleId": "wz-020-professional-table",
+      "source": "wenzhen-manual-capture",
+      "capturedAt": "2026-08-31T22:53:36-07:00",
+      "sourceUrl": "https://pcbz.iwzwh.com/#/paipan/index",
+      "evidenceRef": "evidence/wenzhen/sha256-e82f089f478901afc2b0d149d7ff8f6c5827e72d70b52d482d3efc9ebaf6d948.jpg",
+      "status": "verified",
+      "birth": {
+        "calendarSystem": "solar",
+        "date": "1992-08-21",
+        "time": "12:03",
+        "locationName": "浙江省 杭州市 西湖区",
+        "province": "浙江省",
+        "city": "杭州市",
+        "district": "西湖区",
+        "longitude": 120.13,
+        "latitude": 30.2595,
+        "timezone": "Asia/Shanghai",
+        "useTrueSolarTime": true,
+        "timeCorrectionRuleVersion": "true-solar-v2-zone-meridian-equation-of-time",
+        "dstPolicy": "auto",
+        "dayBoundary": "midnight",
+        "luckMethod": "sect1",
+        "gender": "male"
+      },
+      "expected": {
+        "timeCorrectionRuleVersion": "true-solar-v2-zone-meridian-equation-of-time",
+        "pillars": ["壬申", "戊申", "己巳", "庚午"],
+        "correctedLocalTime": "1992-08-21T12:01",
+        "pillarDetails": [
+          {
+            "pillar": "壬申",
+            "stemTenGod": "正财",
+            "hiddenStems": [
+              { "stem": "庚", "tenGod": "伤官" },
+              { "stem": "壬", "tenGod": "正财" },
+              { "stem": "戊", "tenGod": "劫财" }
+            ],
+            "naYin": "剑锋金",
+            "voidBranches": "戌亥",
+            "twelveGrowthStage": "沐浴",
+            "selfSitting": "长生"
+          },
+          {
+            "pillar": "戊申",
+            "stemTenGod": "劫财",
+            "hiddenStems": [
+              { "stem": "庚", "tenGod": "伤官" },
+              { "stem": "壬", "tenGod": "正财" },
+              { "stem": "戊", "tenGod": "劫财" }
+            ],
+            "naYin": "大驿土",
+            "voidBranches": "寅卯",
+            "twelveGrowthStage": "沐浴",
+            "selfSitting": "病"
+          },
+          {
+            "pillar": "己巳",
+            "hiddenStems": [
+              { "stem": "丙", "tenGod": "正印" },
+              { "stem": "戊", "tenGod": "劫财" },
+              { "stem": "庚", "tenGod": "伤官" }
+            ],
+            "naYin": "大林木",
+            "voidBranches": "戌亥",
+            "twelveGrowthStage": "帝旺",
+            "selfSitting": "帝旺"
+          },
+          {
+            "pillar": "庚午",
+            "stemTenGod": "伤官",
+            "hiddenStems": [
+              { "stem": "丁", "tenGod": "偏印" },
+              { "stem": "己", "tenGod": "比肩" }
+            ],
+            "naYin": "路旁土",
+            "voidBranches": "戌亥",
+            "twelveGrowthStage": "临官",
+            "selfSitting": "沐浴"
+          }
+        ],
+        "luckCycles": [
+          { "pillar": "己酉", "startAge": 7, "direction": "forward" },
+          { "pillar": "庚戌", "startAge": 17, "direction": "forward" },
+          { "pillar": "辛亥", "startAge": 27, "direction": "forward" },
+          { "pillar": "壬子", "startAge": 37, "direction": "forward" },
+          { "pillar": "癸丑", "startAge": 47, "direction": "forward" },
+          { "pillar": "甲寅", "startAge": 57, "direction": "forward" },
+          { "pillar": "乙卯", "startAge": 67, "direction": "forward" },
+          { "pillar": "丙辰", "startAge": 77, "direction": "forward" }
+        ]
+      },
+      "notes": "Captured from WenZhen web professional chart in Google Chrome with history saving disabled. The screenshot proves the four pillars, corrected time, visible professional table fields, and the first eight luck-cycle pillars/starting ages. WenZhen labels the day stem as 元男, so this fixture intentionally does not compare the engine's day-stem ten-god presentation. Shen-sha and exact luck-start timestamp remain outside this verified fixture until school rules and comparison fields are reviewed."
+    },
+    {
+      "sampleId": "wz-021-lichun-boundary-before",
+      "source": "wenzhen-manual-capture",
+      "capturedAt": "2026-08-31T23:01:40-07:00",
+      "sourceUrl": "https://pcbz.iwzwh.com/#/paipan/index",
+      "evidenceRef": "evidence/wenzhen/sha256-ef4e70719083ca18ecf29d54b759985f3f5d4f84a7a56dd69995837db9b93a29.jpg",
+      "status": "verified",
+      "birth": {
+        "calendarSystem": "solar",
+        "date": "2024-02-04",
+        "time": "16:20",
+        "locationName": "北京市 北京市 海淀区",
+        "province": "北京市",
+        "city": "北京市",
+        "district": "海淀区",
+        "placeCode": "110108",
+        "geoDataVersion": "wenzhen-manual-2026-08",
+        "longitude": 116.298,
+        "latitude": 39.9593,
+        "timezone": "Asia/Shanghai",
+        "useTrueSolarTime": true,
+        "timeCorrectionRuleVersion": "true-solar-v2-zone-meridian-equation-of-time",
+        "dstPolicy": "auto",
+        "dayBoundary": "midnight",
+        "luckMethod": "sect1",
+        "gender": "male"
+      },
+      "expected": {
+        "timeCorrectionRuleVersion": "true-solar-v2-zone-meridian-equation-of-time",
+        "pillars": ["癸卯", "乙丑", "戊戌", "庚申"],
+        "correctedLocalTime": "2024-02-04T15:51",
+        "pillarDetails": [
+          {
+            "pillar": "癸卯",
+            "stemTenGod": "正财",
+            "hiddenStems": [{ "stem": "乙", "tenGod": "正官" }],
+            "naYin": "金箔金",
+            "voidBranches": "辰巳",
+            "twelveGrowthStage": "沐浴",
+            "selfSitting": "长生"
+          },
+          {
+            "pillar": "乙丑",
+            "stemTenGod": "正官",
+            "hiddenStems": [{ "stem": "己", "tenGod": "劫财" }, { "stem": "癸", "tenGod": "正财" }, { "stem": "辛", "tenGod": "伤官" }],
+            "naYin": "海中金",
+            "voidBranches": "戌亥",
+            "twelveGrowthStage": "养",
+            "selfSitting": "衰"
+          },
+          {
+            "pillar": "戊戌",
+            "hiddenStems": [{ "stem": "戊", "tenGod": "比肩" }, { "stem": "辛", "tenGod": "伤官" }, { "stem": "丁", "tenGod": "正印" }],
+            "naYin": "平地木",
+            "voidBranches": "辰巳",
+            "twelveGrowthStage": "墓",
+            "selfSitting": "墓"
+          },
+          {
+            "pillar": "庚申",
+            "stemTenGod": "食神",
+            "hiddenStems": [{ "stem": "庚", "tenGod": "食神" }, { "stem": "壬", "tenGod": "偏财" }, { "stem": "戊", "tenGod": "比肩" }],
+            "naYin": "石榴木",
+            "voidBranches": "子丑",
+            "twelveGrowthStage": "病",
+            "selfSitting": "临官"
+          }
+        ]
+      },
+      "notes": "Captured immediately before the 2024 LiChun boundary using WenZhen's displayed true-solar time and Haidian coordinates. This sample verifies that the year/month pillars remain 癸卯/乙丑 before the boundary. Shen-sha and day-stem presentation are intentionally excluded."
+    },
+    {
+      "sampleId": "wz-022-late-zi-day-boundary",
+      "source": "wenzhen-manual-capture",
+      "capturedAt": "2026-08-31T23:05:34-07:00",
+      "sourceUrl": "https://pcbz.iwzwh.com/#/paipan/index",
+      "evidenceRef": "evidence/wenzhen/sha256-369e1bc7ce02de346acb32243d264a5c63e1e2177c804760d1da7bb3ecdf42aa.jpg",
+      "status": "verified",
+      "birth": {
+        "calendarSystem": "solar",
+        "date": "2000-01-01",
+        "time": "23:30",
+        "locationName": "北京市 北京市 海淀区",
+        "province": "北京市",
+        "city": "北京市",
+        "district": "海淀区",
+        "placeCode": "110108",
+        "geoDataVersion": "wenzhen-manual-2026-08",
+        "longitude": 116.298,
+        "latitude": 39.9593,
+        "timezone": "Asia/Shanghai",
+        "useTrueSolarTime": true,
+        "timeCorrectionRuleVersion": "true-solar-v2-zone-meridian-equation-of-time",
+        "dstPolicy": "auto",
+        "dayBoundary": "zi-hour-start",
+        "luckMethod": "sect1",
+        "gender": "female"
+      },
+      "expected": {
+        "timeCorrectionRuleVersion": "true-solar-v2-zone-meridian-equation-of-time",
+        "pillars": ["己卯", "丙子", "己未", "甲子"],
+        "pillarDetails": [
+          {
+            "pillar": "己卯",
+            "stemTenGod": "比肩",
+            "hiddenStems": [{ "stem": "乙", "tenGod": "七杀" }],
+            "naYin": "城头土",
+            "voidBranches": "申酉",
+            "twelveGrowthStage": "病",
+            "selfSitting": "病"
+          },
+          {
+            "pillar": "丙子",
+            "stemTenGod": "正印",
+            "hiddenStems": [{ "stem": "癸", "tenGod": "偏财" }],
+            "naYin": "涧下水",
+            "voidBranches": "申酉",
+            "twelveGrowthStage": "绝",
+            "selfSitting": "胎"
+          },
+          {
+            "pillar": "己未",
+            "hiddenStems": [{ "stem": "己", "tenGod": "比肩" }, { "stem": "丁", "tenGod": "偏印" }, { "stem": "乙", "tenGod": "七杀" }],
+            "naYin": "天上火",
+            "voidBranches": "子丑",
+            "twelveGrowthStage": "冠带",
+            "selfSitting": "冠带"
+          },
+          {
+            "pillar": "甲子",
+            "stemTenGod": "正官",
+            "hiddenStems": [{ "stem": "癸", "tenGod": "偏财" }],
+            "naYin": "海中金",
+            "voidBranches": "戌亥",
+            "twelveGrowthStage": "绝",
+            "selfSitting": "沐浴"
+          }
+        ]
+      },
+      "notes": "Captured from WenZhen case 6. This sample verifies late-zi day-boundary behavior: midnight mode differs, while zi-hour-start matches the visible WenZhen professional table. Corrected true-solar minute and luck-cycle fields are not asserted from this screenshot."
+    },
+    {
+      "sampleId": "wz-023-urumqi-dst-ignore",
+      "source": "wenzhen-manual-capture",
+      "capturedAt": "2026-08-31T23:07:33-07:00",
+      "sourceUrl": "https://pcbz.iwzwh.com/#/paipan/index",
+      "evidenceRef": "evidence/wenzhen/sha256-ce20a978d2db7e2a9ebefd6c1dae4e51f1ab5c1a82b747e706de22aee9a5ad11.jpg",
+      "status": "verified",
+      "birth": {
+        "calendarSystem": "solar",
+        "date": "1990-06-21",
+        "time": "12:00",
+        "locationName": "新疆维吾尔自治区 乌鲁木齐市 天山区",
+        "province": "新疆维吾尔自治区",
+        "city": "乌鲁木齐市",
+        "district": "天山区",
+        "placeCode": "650102",
+        "geoDataVersion": "wenzhen-manual-2026-08",
+        "longitude": 87.6317,
+        "latitude": 43.7944,
+        "timezone": "Asia/Shanghai",
+        "useTrueSolarTime": true,
+        "timeCorrectionRuleVersion": "true-solar-v2-zone-meridian-equation-of-time",
+        "dstPolicy": "ignore",
+        "dayBoundary": "midnight",
+        "luckMethod": "sect1",
+        "gender": "male"
+      },
+      "expected": {
+        "timeCorrectionRuleVersion": "true-solar-v2-zone-meridian-equation-of-time",
+        "pillars": ["庚午", "壬午", "丁巳", "乙巳"],
+        "pillarDetails": [
+          {
+            "pillar": "庚午",
+            "stemTenGod": "正财",
+            "hiddenStems": [{ "stem": "丁", "tenGod": "比肩" }, { "stem": "己", "tenGod": "食神" }],
+            "naYin": "路旁土",
+            "voidBranches": "戌亥",
+            "twelveGrowthStage": "临官",
+            "selfSitting": "沐浴"
+          },
+          {
+            "pillar": "壬午",
+            "stemTenGod": "正官",
+            "hiddenStems": [{ "stem": "丁", "tenGod": "比肩" }, { "stem": "己", "tenGod": "食神" }],
+            "naYin": "杨柳木",
+            "voidBranches": "申酉",
+            "twelveGrowthStage": "临官",
+            "selfSitting": "胎"
+          },
+          {
+            "pillar": "丁巳",
+            "hiddenStems": [{ "stem": "丙", "tenGod": "劫财" }, { "stem": "戊", "tenGod": "伤官" }, { "stem": "庚", "tenGod": "正财" }],
+            "naYin": "沙中土",
+            "voidBranches": "子丑",
+            "twelveGrowthStage": "帝旺",
+            "selfSitting": "帝旺"
+          },
+          {
+            "pillar": "乙巳",
+            "stemTenGod": "偏印",
+            "hiddenStems": [{ "stem": "丙", "tenGod": "劫财" }, { "stem": "戊", "tenGod": "伤官" }, { "stem": "庚", "tenGod": "正财" }],
+            "naYin": "覆灯火",
+            "voidBranches": "寅卯",
+            "twelveGrowthStage": "帝旺",
+            "selfSitting": "沐浴"
+          }
+        ]
+      },
+      "notes": "Captured from WenZhen case 7. The controlled input uses true solar time with DST ignored, and the screenshot supports the asserted pillars and professional table. It does not visibly expose WenZhen's internal time-profile fields, so those fields are intentionally not asserted as external evidence."
+    },
+    {
+      "sampleId": "wz-024-lunar-leap-fourth-month",
+      "source": "wenzhen-manual-capture",
+      "capturedAt": "2026-08-31T23:18:09-07:00",
+      "sourceUrl": "https://pcbz.iwzwh.com/#/paipan/index",
+      "evidenceRef": "evidence/wenzhen/sha256-8f6b57d7b61e4b320b04da7c578d3838e883758cba98f9e9bf18d2b8e1f64951.jpg",
+      "status": "verified",
+      "birth": {
+        "calendarSystem": "lunar",
+        "date": "2020-04-01",
+        "time": "08:00",
+        "locationName": "浙江省 杭州市 西湖区",
+        "province": "浙江省",
+        "city": "杭州市",
+        "district": "西湖区",
+        "placeCode": "330106",
+        "geoDataVersion": "wenzhen-manual-2026-08",
+        "longitude": 120.13,
+        "latitude": 30.2595,
+        "timezone": "Asia/Shanghai",
+        "useTrueSolarTime": true,
+        "timeCorrectionRuleVersion": "true-solar-v2-zone-meridian-equation-of-time",
+        "dstPolicy": "auto",
+        "dayBoundary": "zi-hour-start",
+        "luckMethod": "sect1",
+        "gender": "male",
+        "lunarLeapMonth": true
+      },
+      "expected": {
+        "timeCorrectionRuleVersion": "true-solar-v2-zone-meridian-equation-of-time",
+        "pillars": ["庚子", "辛巳", "丙寅", "壬辰"],
+        "pillarDetails": [
+          {
+            "pillar": "庚子",
+            "stemTenGod": "偏财",
+            "hiddenStems": [{ "stem": "癸", "tenGod": "正官" }],
+            "naYin": "壁上土",
+            "voidBranches": "辰巳",
+            "twelveGrowthStage": "胎",
+            "selfSitting": "死"
+          },
+          {
+            "pillar": "辛巳",
+            "stemTenGod": "正财",
+            "hiddenStems": [{ "stem": "丙", "tenGod": "比肩" }],
+            "naYin": "白蜡金",
+            "voidBranches": "申酉",
+            "twelveGrowthStage": "临官",
+            "selfSitting": "死"
+          },
+          {
+            "pillar": "丙寅",
+            "hiddenStems": [{ "stem": "甲", "tenGod": "偏印" }, { "stem": "丙", "tenGod": "比肩" }, { "stem": "戊", "tenGod": "食神" }],
+            "naYin": "炉中火",
+            "voidBranches": "戌亥",
+            "twelveGrowthStage": "长生",
+            "selfSitting": "长生"
+          },
+          {
+            "pillar": "壬辰",
+            "stemTenGod": "七杀",
+            "hiddenStems": [{ "stem": "戊", "tenGod": "食神" }, { "stem": "乙", "tenGod": "正印" }, { "stem": "癸", "tenGod": "正官" }],
+            "naYin": "长流水",
+            "voidBranches": "午未",
+            "twelveGrowthStage": "冠带",
+            "selfSitting": "墓"
+          }
+        ]
+      },
+      "notes": "Captured from WenZhen case 8 with the lunar leap-month selector. The URL and screenshot prove lunar leap fourth month day one converts to 2020-05-23 and that all four pillars plus the asserted professional fields match. WenZhen displays true-solar time 08:03 while the versioned NOAA-approximation engine displays 08:04; correctedLocalTime is intentionally not asserted until a reviewed high-precision time-correction version is introduced. WenZhen orders the secondary hidden stems of 巳 as 庚/戊 while the engine exposes 戊/庚, so this fixture asserts only the dominant hidden stem instead of claiming an unreviewed order equivalence."
+    },
+    {
+      "sampleId": "wz-025-dynamic-year-month-public",
+      "source": "wenzhen-manual-capture",
+      "capturedAt": "2026-09-03T13:54:05-07:00",
+      "sourceUrl": "https://pcbz.iwzwh.com/#/paipan/index",
+      "evidenceRef": "evidence/wenzhen/sha256-6507a10a271d97e3710ebdaa958ec74d6ccd045a53cb10ce22b22aec69e1574b.jpg",
+      "status": "verified",
+      "birth": {
+        "calendarSystem": "solar",
+        "date": "1992-08-21",
+        "time": "12:03",
+        "locationName": "浙江省 杭州市 西湖区",
+        "province": "浙江省",
+        "city": "杭州市",
+        "district": "西湖区",
+        "placeCode": "330106",
+        "geoDataVersion": "wenzhen-manual-2026-09",
+        "longitude": 120.13,
+        "latitude": 30.2595,
+        "timezone": "Asia/Shanghai",
+        "useTrueSolarTime": true,
+        "timeCorrectionRuleVersion": "true-solar-v2-zone-meridian-equation-of-time",
+        "dstPolicy": "auto",
+        "dayBoundary": "midnight",
+        "luckMethod": "sect1",
+        "gender": "male"
+      },
+      "flowQuery": {
+        "targetDate": "2026-09-01",
+        "targetTime": "15:30"
+      },
+      "expected": {
+        "pillars": ["壬申", "戊申", "己巳", "庚午"],
+        "annualCycles": [
+          { "year": 2026, "pillar": "丙午" }
+        ],
+        "monthlyCycles": [
+          { "year": 2026, "month": 7, "pillar": "丙申" }
+        ]
+      },
+      "notes": "Captured from WenZhen's public H5 basic-chart flow section. The screenshot shows the 辛亥 current luck cycle, selected 2026 丙午 annual cycle and selected 立秋-to-白露 丙申 monthly cycle. WenZhen explicitly blocks daily and hourly cycles behind membership, so this fixture asserts only the publicly visible annual and monthly fields; wz-048 remains pending until a reviewed member capture proves the complete five-level chain."
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "@fengshui/export-documents",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": { "@fengshui/domain": "workspace:*" },
+  "devDependencies": { "typescript": "^6.0.3", "vitest": "^4.1.11" }
+}

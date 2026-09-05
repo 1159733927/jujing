@@ -1,0 +1,81 @@
+services:
+  db:
+    image: postgres:16-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fengshui}
+      POSTGRES_USER: ${POSTGRES_USER:-fengshui}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  api:
+    build:
+      context: .
+      target: api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      HOST: ${HOST:-0.0.0.0}
+      PORT: ${PORT:-3001}
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-postgres}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-fengshui}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-fengshui}
+      ADMIN_API_TOKEN: ${ADMIN_API_TOKEN:?ADMIN_API_TOKEN is required}
+      ADMIN_ACTOR_ID: ${ADMIN_ACTOR_ID:-local-admin}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      KNOWLEDGE_MCP_TOKEN: ${KNOWLEDGE_MCP_TOKEN:?KNOWLEDGE_MCP_TOKEN is required}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:?DEEPSEEK_API_KEY is required}
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      MIGRATIONS_PATH: /app/apps/api/migrations
+      WENZHEN_EVIDENCE_PATH: /app/.data/evidence/wenzhen
+      FENGSHUI_KNOWLEDGE_API_URL: http://127.0.0.1:3001
+      DSH_TELEMETRY_DISABLED: "1"
+      DSH_TELEMETRY_MODE: DISABLED
+    volumes:
+      - uploads-data:/app/.data/uploads
+      - harness-home:/app/.data/report-harness-home
+      - wenzhen-evidence-data:/app/.data/evidence/wenzhen
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3001/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  web:
+    build:
+      context: .
+      target: web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${APP_BIND_HOST:-0.0.0.0}:${APP_PORT:-8080}:80"
+
+  admin:
+    build:
+      context: .
+      target: admin
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${ADMIN_BIND_HOST:-127.0.0.1}:${ADMIN_PORT:-8081}:80"
+
+volumes:
+  postgres-data:
+  uploads-data:
+  harness-home:
+  wenzhen-evidence-data:

@@ -1,0 +1,26 @@
+{
+  "name": "fengshui-report-platform",
+  "private": true,
+  "packageManager": "pnpm@11.9.0",
+  "scripts": {
+    "dev": "node scripts/dev-demo.mjs",
+    "dev:core": "pnpm --parallel --filter @fengshui/web --filter @fengshui/api dev",
+    "dev:demo": "node scripts/dev-demo.mjs",
+    "smoke:demo": "node scripts/demo-smoke.mjs",
+    "smoke:report": "node scripts/report-e2e-smoke.mjs",
+    "e2e:account": "node scripts/account-chrome-e2e.mjs",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "node --test scripts/dev-demo.test.mjs scripts/demo-smoke.test.mjs scripts/report-e2e-smoke.test.mjs scripts/wenzhen-capture-plan.test.mjs && pnpm --filter @fengshui/api test && pnpm --filter @fengshui/bazi-engine test && pnpm --filter @fengshui/geo-data test && pnpm --filter @fengshui/export-documents test && pnpm --filter @fengshui/admin test && pnpm --filter @fengshui/web test && pnpm --filter @fengshui-report/dsh-fengshui-report test && node --test services/knowledge-mcp/tests/*.test.mjs",
+    "knowledge:import-pdfs": "PDF_KNOWLEDGE_DIR=$PWD pnpm --filter @fengshui/api knowledge:import-pdfs",
+    "test:postgres": "pnpm --filter @fengshui/api test:postgres",
+    "test:postgres:local": "node scripts/postgres-local-test.mjs",
+    "wenzhen:diff": "pnpm --filter @fengshui/bazi-engine verify:wenzhen",
+    "wenzhen:gate": "pnpm --filter @fengshui/bazi-engine wenzhen:gate",
+    "wenzhen:capture-plan": "node scripts/wenzhen-capture-plan.mjs",
+    "deploy:config": "docker compose config",
+    "deploy:up": "docker compose up --build",
+    "deploy:down": "docker compose down",
+    "deploy:logs": "docker compose logs -f --tail=200"
+  }
+}

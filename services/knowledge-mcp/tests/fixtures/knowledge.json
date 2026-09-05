@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 2,
+  "assets": [
+    {
+      "id": "asset-fixture-1",
+      "version": 3,
+      "state": "published"
+    }
+  ],
+  "versions": [
+    {
+      "assetId": "asset-fixture-1",
+      "version": 3,
+      "versionId": "asset-fixture-1:v3:0123456789abcdef",
+      "contentHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "kind": "article",
+      "title": "玄关明堂资料",
+      "tags": ["玄关", "明堂"],
+      "body": "玄关宜保持整洁明亮。",
+      "sourceLabel": "测试专家资料",
+      "exactExcerpt": "玄关宜保持整洁明亮。",
+      "publishedAt": "2026-08-30T00:00:00.000Z"
+    }
+  ]
+}

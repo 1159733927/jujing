@@ -1,0 +1,154 @@
+{
+  "coordinateDataset": {
+    "id": "licensed-coordinate-import-fixture",
+    "version": "licensed-coordinates@2026.08.31",
+    "label": "Licensed coordinate import fixture",
+    "source": {
+      "label": "Fixture Coordinate Registry",
+      "url": "https://example.test/fixture-coordinate-registry",
+      "license": "Fixture Data License 1.0",
+      "notes": "Synthetic test fixture for coordinate import behavior."
+    },
+    "generatedAt": "2026-08-31T00:00:00.000Z",
+    "coordinateSystem": "WGS84",
+    "timezonePolicy": "city-default-iana"
+  },
+  "administrativeTree": [
+    {
+      "code": "330000",
+      "name": "浙江省",
+      "cities": [
+        {
+          "code": "330100",
+          "name": "杭州市",
+          "timezone": "Asia/Shanghai",
+          "districts": [
+            { "code": "330106", "name": "西湖区" },
+            { "code": "330108", "name": "滨江区" }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "320000",
+      "name": "江苏省",
+      "cities": [
+        {
+          "code": "320100",
+          "name": "南京市",
+          "timezone": "Asia/Shanghai",
+          "districts": [
+            { "code": "320106", "name": "鼓楼区" }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "350000",
+      "name": "福建省",
+      "cities": [
+        {
+          "code": "350100",
+          "name": "福州市",
+          "timezone": "Asia/Shanghai",
+          "districts": [
+            { "code": "350102", "name": "鼓楼区" }
+          ]
+        }
+      ]
+    }
+  ],
+  "records": {
+    "exactAdminCode": [
+      {
+        "adminCode": "330106",
+        "provinceName": "浙江省",
+        "cityName": "杭州市",
+        "districtName": "西湖区旧称",
+        "longitude": 120.1302,
+        "latitude": 30.2595,
+        "sourceLabel": "Fixture Coordinate Registry",
+        "license": "Fixture Data License 1.0"
+      }
+    ],
+    "ambiguousName": [
+      {
+        "provinceName": "",
+        "cityName": "",
+        "districtName": "鼓楼区",
+        "longitude": 118.7698,
+        "latitude": 32.0664,
+        "sourceLabel": "Fixture Coordinate Registry",
+        "license": "Fixture Data License 1.0"
+      }
+    ],
+    "invalidCoordinate": [
+      {
+        "adminCode": "330108",
+        "provinceName": "浙江省",
+        "cityName": "杭州市",
+        "districtName": "滨江区",
+        "longitude": 181,
+        "latitude": 91,
+        "sourceLabel": "Fixture Coordinate Registry",
+        "license": "Fixture Data License 1.0"
+      }
+    ],
+    "duplicateConflict": [
+      {
+        "adminCode": "330106",
+        "provinceName": "浙江省",
+        "cityName": "杭州市",
+        "districtName": "西湖区",
+        "longitude": 120.1302,
+        "latitude": 30.2595,
+        "sourceLabel": "Fixture Coordinate Registry",
+        "license": "Fixture Data License 1.0"
+      },
+      {
+        "adminCode": "330106",
+        "provinceName": "浙江省",
+        "cityName": "杭州市",
+        "districtName": "西湖区",
+        "longitude": 120.2201,
+        "latitude": 30.3102,
+        "sourceLabel": "Fixture Coordinate Registry",
+        "license": "Fixture Data License 1.0"
+      }
+    ],
+    "missingAttribution": [
+      {
+        "adminCode": "330108",
+        "provinceName": "浙江省",
+        "cityName": "杭州市",
+        "districtName": "滨江区",
+        "longitude": 120.2119,
+        "latitude": 30.2084,
+        "sourceLabel": "",
+        "license": ""
+      }
+    ],
+    "versionedOutput": [
+      {
+        "adminCode": "330106",
+        "provinceName": "浙江省",
+        "cityName": "杭州市",
+        "districtName": "西湖区",
+        "longitude": 120.1302,
+        "latitude": 30.2595,
+        "sourceLabel": "Fixture Coordinate Registry",
+        "license": "Fixture Data License 1.0"
+      },
+      {
+        "adminCode": "330108",
+        "provinceName": "浙江省",
+        "cityName": "杭州市",
+        "districtName": "滨江区",
+        "longitude": 120.2119,
+        "latitude": 30.2084,
+        "sourceLabel": "Fixture Coordinate Registry",
+        "license": "Fixture Data License 1.0"
+      }
+    ]
+  }
+}

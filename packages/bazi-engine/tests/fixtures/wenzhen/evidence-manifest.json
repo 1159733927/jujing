@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "wenzhen-evidence-manifest-v1",
+  "evidence": [
+    {
+      "evidenceRef": "evidence/wenzhen/sha256-e82f089f478901afc2b0d149d7ff8f6c5827e72d70b52d482d3efc9ebaf6d948.jpg",
+      "sha256": "e82f089f478901afc2b0d149d7ff8f6c5827e72d70b52d482d3efc9ebaf6d948",
+      "mimeType": "image/jpeg",
+      "size": 180435,
+      "capturedAt": "2026-08-31T22:53:36-07:00",
+      "captureMethod": "manual-chrome-screenshot",
+      "width": 1314,
+      "height": 768
+    },
+    {
+      "evidenceRef": "evidence/wenzhen/sha256-ef4e70719083ca18ecf29d54b759985f3f5d4f84a7a56dd69995837db9b93a29.jpg",
+      "sha256": "ef4e70719083ca18ecf29d54b759985f3f5d4f84a7a56dd69995837db9b93a29",
+      "mimeType": "image/jpeg",
+      "size": 147763,
+      "capturedAt": "2026-08-31T23:01:40-07:00",
+      "captureMethod": "manual-chrome-screenshot",
+      "width": 1314,
+      "height": 768
+    },
+    {
+      "evidenceRef": "evidence/wenzhen/sha256-369e1bc7ce02de346acb32243d264a5c63e1e2177c804760d1da7bb3ecdf42aa.jpg",
+      "sha256": "369e1bc7ce02de346acb32243d264a5c63e1e2177c804760d1da7bb3ecdf42aa",
+      "mimeType": "image/jpeg",
+      "size": 137533,
+      "capturedAt": "2026-08-31T23:05:34-07:00",
+      "captureMethod": "manual-chrome-screenshot",
+      "width": 1314,
+      "height": 768
+    },
+    {
+      "evidenceRef": "evidence/wenzhen/sha256-ce20a978d2db7e2a9ebefd6c1dae4e51f1ab5c1a82b747e706de22aee9a5ad11.jpg",
+      "sha256": "ce20a978d2db7e2a9ebefd6c1dae4e51f1ab5c1a82b747e706de22aee9a5ad11",
+      "mimeType": "image/jpeg",
+      "size": 163549,
+      "capturedAt": "2026-08-31T23:07:33-07:00",
+      "captureMethod": "manual-chrome-screenshot",
+      "width": 1314,
+      "height": 768
+    },
+    {
+      "evidenceRef": "evidence/wenzhen/sha256-8f6b57d7b61e4b320b04da7c578d3838e883758cba98f9e9bf18d2b8e1f64951.jpg",
+      "sha256": "8f6b57d7b61e4b320b04da7c578d3838e883758cba98f9e9bf18d2b8e1f64951",
+      "mimeType": "image/jpeg",
+      "size": 130735,
+      "capturedAt": "2026-08-31T23:18:09-07:00",
+      "captureMethod": "manual-chrome-screenshot",
+      "width": 1314,
+      "height": 768
+    },
+    {
+      "evidenceRef": "evidence/wenzhen/sha256-6507a10a271d97e3710ebdaa958ec74d6ccd045a53cb10ce22b22aec69e1574b.jpg",
+      "sha256": "6507a10a271d97e3710ebdaa958ec74d6ccd045a53cb10ce22b22aec69e1574b",
+      "mimeType": "image/jpeg",
+      "size": 85628,
+      "capturedAt": "2026-09-03T13:54:05-07:00",
+      "captureMethod": "automated-chrome-screenshot",
+      "width": 1728,
+      "height": 833
+    }
+  ]
+}

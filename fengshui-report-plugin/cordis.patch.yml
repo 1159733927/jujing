@@ -1,0 +1,4 @@
+# Installed as a profile bundle. Later profile patches can override this row.
+- insert:
+    - id: fengshui-report
+      name: '@fengshui-report/dsh-fengshui-report'

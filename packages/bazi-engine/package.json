@@ -1,0 +1,7 @@
+{
+  "name": "@fengshui/bazi-engine", "private": true, "version": "0.0.1", "type": "module",
+  "exports": { ".": "./src/index.ts", "./wenzhen-fixtures": "./src/wenzhen-fixtures.ts" },
+  "scripts": { "typecheck": "tsc --noEmit", "build": "tsc --noEmit", "test": "vitest run", "wenzhen:diff": "pnpm --filter @fengshui/api exec tsx ../../packages/bazi-engine/scripts/verify-wenzhen-fixtures.ts", "wenzhen:gate": "pnpm --filter @fengshui/api exec tsx ../../packages/bazi-engine/scripts/verify-wenzhen-fixtures.ts --require-stage1-ready", "verify:wenzhen": "pnpm --filter @fengshui/api exec tsx ../../packages/bazi-engine/scripts/verify-wenzhen-fixtures.ts" },
+  "dependencies": { "@fengshui/domain": "workspace:*", "@fengshui/geo-data": "workspace:*", "lunar-typescript": "^1.8.6" },
+  "devDependencies": { "@types/node": "^22.10.2", "typescript": "^6.0.3", "vitest": "^4.0.0" }
+}

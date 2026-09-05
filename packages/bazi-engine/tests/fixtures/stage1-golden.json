@@ -1,0 +1,300 @@
+{
+  "metadata": {
+    "purpose": "Stage 1 BaZi engine golden fixtures for deterministic regression checks.",
+    "source": "local lunar-typescript baseline captured on 2026-08-31; verified WenZhen evidence fixtures are maintained separately for external parity checks.",
+    "ruleVersion": "bazi-v5-stem-branch-relations"
+  },
+  "samples": [
+    {
+      "id": "hangzhou-1992-08-18-0930-true-solar",
+      "description": "Solar calendar Hangzhou baseline with true solar time enabled.",
+      "sourceType": "local-lunar-typescript-baseline",
+      "input": {
+        "date": "1992-08-18",
+        "time": "09:30",
+        "locationName": "浙江省 杭州市 西湖区",
+        "longitude": 120.1302,
+        "latitude": 30.2595,
+        "timezone": "Asia/Shanghai",
+        "useTrueSolarTime": true,
+        "gender": "male"
+      },
+      "expected": {
+        "pillars": ["壬申", "戊申", "丙寅", "癸巳"],
+        "correctedLocalTime": "1992-08-18T09:27",
+        "correctionMinutes": -2.67,
+        "normalizedSolarDate": "1992-08-18",
+        "normalizedSolarTime": "09:30",
+        "firstLuckCycle": {
+          "pillar": "己酉",
+          "startAge": 8,
+          "startDate": "1999-05-28",
+          "direction": "forward"
+        },
+        "firstAnnualCycle": {
+          "year": 1990,
+          "pillar": "庚午"
+        },
+        "firstDailyCycle": {
+          "date": "1992-08-18",
+          "pillar": "丙寅"
+        },
+        "firstHourlyCycle": {
+          "dateTime": "1992-08-18 00:00:00",
+          "pillar": "戊子"
+        }
+      }
+    },
+    {
+      "id": "beijing-2024-lunar-new-year-civil",
+      "description": "Lunar new year converts to the equivalent solar date when civil time is selected.",
+      "sourceType": "local-lunar-typescript-baseline",
+      "input": {
+        "calendarSystem": "lunar",
+        "date": "2024-01-01",
+        "time": "12:00",
+        "locationName": "北京市 北京市 东城区",
+        "longitude": 116.4164,
+        "latitude": 39.9288,
+        "timezone": "Asia/Shanghai",
+        "useTrueSolarTime": false,
+        "gender": "female"
+      },
+      "expected": {
+        "pillars": ["甲辰", "丙寅", "甲辰", "庚午"],
+        "correctedLocalTime": "2024-02-10T12:00",
+        "correctionMinutes": 0,
+        "normalizedSolarDate": "2024-02-10",
+        "normalizedSolarTime": "12:00",
+        "firstLuckCycle": {
+          "pillar": "乙丑",
+          "startAge": 3,
+          "startDate": "2026-01-20",
+          "direction": "backward"
+        },
+        "firstAnnualCycle": {
+          "year": 2022,
+          "pillar": "壬寅"
+        },
+        "firstDailyCycle": {
+          "date": "2024-02-10",
+          "pillar": "甲辰"
+        },
+        "firstHourlyCycle": {
+          "dateTime": "2024-02-10 00:00:00",
+          "pillar": "甲子"
+        }
+      }
+    },
+    {
+      "id": "wucha-2024-boundary-true-solar",
+      "description": "Far-west mainland China true solar correction crosses into the previous civil day.",
+      "sourceType": "local-lunar-typescript-baseline",
+      "input": {
+        "date": "2024-01-01",
+        "time": "00:10",
+        "locationName": "新疆维吾尔自治区 克孜勒苏柯尔克孜自治州 乌恰县",
+        "longitude": 75.2597,
+        "latitude": 39.7191,
+        "timezone": "Asia/Shanghai",
+        "useTrueSolarTime": true,
+        "gender": "male"
+      },
+      "expected": {
+        "pillars": ["癸卯", "甲子", "癸亥", "癸亥"],
+        "correctedLocalTime": "2023-12-31T21:07",
+        "correctionMinutes": -182.57,
+        "normalizedSolarDate": "2024-01-01",
+        "normalizedSolarTime": "00:10",
+        "firstLuckCycle": {
+          "pillar": "癸亥",
+          "startAge": 10,
+          "startDate": "2032-01-20",
+          "direction": "backward"
+        },
+        "firstAnnualCycle": {
+          "year": 2021,
+          "pillar": "辛丑"
+        },
+        "firstDailyCycle": {
+          "date": "2023-12-31",
+          "pillar": "癸亥"
+        },
+        "firstHourlyCycle": {
+          "dateTime": "2023-12-31 00:00:00",
+          "pillar": "壬子"
+        }
+      }
+    },
+    {
+      "id": "beijing-lichun-before-civil",
+      "description": "Civil-time sample before the 2024 Li Chun boundary.",
+      "sourceType": "local-lunar-typescript-baseline",
+      "input": {
+        "date": "2024-02-04",
+        "time": "15:00",
+        "locationName": "北京市 北京市 东城区",
+        "longitude": 116.4164,
+        "latitude": 39.9286,
+        "timezone": "Asia/Shanghai",
+        "useTrueSolarTime": false,
+        "gender": "male"
+      },
+      "expected": {
+        "pillars": ["癸卯", "乙丑", "戊戌", "庚申"],
+        "correctedLocalTime": "2024-02-04T15:00",
+        "correctionMinutes": 0,
+        "normalizedSolarDate": "2024-02-04",
+        "normalizedSolarTime": "15:00",
+        "normalizedLunarDate": "2023-12-25",
+        "normalizedLunarLeapMonth": false,
+        "firstLuckCycle": { "pillar": "甲子", "startAge": 10, "startDate": "2033-12-04", "direction": "backward" },
+        "firstAnnualCycle": { "year": 2022, "pillar": "壬寅" },
+        "firstDailyCycle": { "date": "2024-02-04", "pillar": "戊戌" },
+        "firstHourlyCycle": { "dateTime": "2024-02-04 00:00:00", "pillar": "壬子" }
+      }
+    },
+    {
+      "id": "beijing-lichun-after-civil",
+      "description": "Civil-time sample after the 2024 Li Chun boundary.",
+      "sourceType": "local-lunar-typescript-baseline",
+      "input": {
+        "date": "2024-02-04",
+        "time": "17:00",
+        "locationName": "北京市 北京市 东城区",
+        "longitude": 116.4164,
+        "latitude": 39.9286,
+        "timezone": "Asia/Shanghai",
+        "useTrueSolarTime": false,
+        "gender": "male"
+      },
+      "expected": {
+        "pillars": ["甲辰", "丙寅", "戊戌", "辛酉"],
+        "correctedLocalTime": "2024-02-04T17:00",
+        "correctionMinutes": 0,
+        "normalizedSolarDate": "2024-02-04",
+        "normalizedSolarTime": "17:00",
+        "normalizedLunarDate": "2023-12-25",
+        "normalizedLunarLeapMonth": false,
+        "firstLuckCycle": { "pillar": "丁卯", "startAge": 10, "startDate": "2033-12-24", "direction": "forward" },
+        "firstAnnualCycle": { "year": 2022, "pillar": "壬寅" },
+        "firstDailyCycle": { "date": "2024-02-04", "pillar": "戊戌" },
+        "firstHourlyCycle": { "dateTime": "2024-02-04 00:00:00", "pillar": "壬子" }
+      }
+    },
+    {
+      "id": "beijing-2023-leap-lunar-second-month",
+      "description": "Leap lunar second-month input keeps leap-month provenance after conversion.",
+      "sourceType": "local-lunar-typescript-baseline",
+      "input": {
+        "calendarSystem": "lunar",
+        "lunarLeapMonth": true,
+        "date": "2023-02-01",
+        "time": "08:15",
+        "locationName": "北京市 北京市 东城区",
+        "longitude": 116.4164,
+        "latitude": 39.9286,
+        "timezone": "Asia/Shanghai",
+        "useTrueSolarTime": false,
+        "gender": "female"
+      },
+      "expected": {
+        "pillars": ["癸卯", "乙卯", "己卯", "戊辰"],
+        "correctedLocalTime": "2023-03-22T08:15",
+        "correctionMinutes": 0,
+        "normalizedSolarDate": "2023-03-22",
+        "normalizedSolarTime": "08:15",
+        "normalizedLunarDate": "2023-02-01",
+        "normalizedLunarLeapMonth": true,
+        "firstLuckCycle": { "pillar": "丙辰", "startAge": 5, "startDate": "2027-12-02", "direction": "forward" },
+        "firstAnnualCycle": { "year": 2021, "pillar": "辛丑" },
+        "firstDailyCycle": { "date": "2023-03-22", "pillar": "己卯" },
+        "firstHourlyCycle": { "dateTime": "2023-03-22 00:00:00", "pillar": "甲子" }
+      }
+    },
+    {
+      "id": "new-york-2024-dst-summer-civil",
+      "description": "Overseas summer sample applies America/New_York DST normalization.",
+      "sourceType": "local-lunar-typescript-baseline",
+      "input": {
+        "date": "2024-07-01",
+        "time": "08:30",
+        "locationName": "United States New York County New York",
+        "longitude": -74.006,
+        "latitude": 40.7128,
+        "timezone": "America/New_York",
+        "useTrueSolarTime": false,
+        "gender": "male"
+      },
+      "expected": {
+        "pillars": ["甲辰", "庚午", "丙寅", "壬辰"],
+        "correctedLocalTime": "2024-07-01T07:30",
+        "correctionMinutes": -60,
+        "normalizedSolarDate": "2024-07-01",
+        "normalizedSolarTime": "08:30",
+        "normalizedLunarDate": "2024-05-26",
+        "normalizedLunarLeapMonth": false,
+        "firstLuckCycle": { "pillar": "辛未", "startAge": 3, "startDate": "2026-05-11", "direction": "forward" },
+        "firstAnnualCycle": { "year": 2022, "pillar": "壬寅" },
+        "firstDailyCycle": { "date": "2024-07-01", "pillar": "丙寅" },
+        "firstHourlyCycle": { "dateTime": "2024-07-01 00:00:00", "pillar": "戊子" }
+      }
+    },
+    {
+      "id": "new-york-2024-dst-fall-ambiguous-civil",
+      "description": "Overseas fall-back sample records the earliest ambiguous America/New_York wall time.",
+      "sourceType": "local-lunar-typescript-baseline",
+      "input": {
+        "date": "2024-11-03",
+        "time": "01:30",
+        "locationName": "United States New York County New York",
+        "longitude": -74.006,
+        "latitude": 40.7128,
+        "timezone": "America/New_York",
+        "useTrueSolarTime": false,
+        "gender": "female"
+      },
+      "expected": {
+        "pillars": ["甲辰", "甲戌", "辛未", "戊子"],
+        "correctedLocalTime": "2024-11-03T00:30",
+        "correctionMinutes": -60,
+        "normalizedSolarDate": "2024-11-03",
+        "normalizedSolarTime": "01:30",
+        "normalizedLunarDate": "2024-10-03",
+        "normalizedLunarLeapMonth": false,
+        "firstLuckCycle": { "pillar": "癸酉", "startAge": 10, "startDate": "2033-06-23", "direction": "backward" },
+        "firstAnnualCycle": { "year": 2022, "pillar": "壬寅" },
+        "firstDailyCycle": { "date": "2024-11-03", "pillar": "辛未" },
+        "firstHourlyCycle": { "dateTime": "2024-11-03 00:00:00", "pillar": "戊子" }
+      }
+    },
+    {
+      "id": "tokyo-2024-no-dst-civil",
+      "description": "Overseas non-DST sample keeps Asia/Tokyo civil time unchanged.",
+      "sourceType": "local-lunar-typescript-baseline",
+      "input": {
+        "date": "2024-07-01",
+        "time": "08:30",
+        "locationName": "Japan Tokyo Metropolis Chiyoda",
+        "longitude": 139.753,
+        "latitude": 35.684,
+        "timezone": "Asia/Tokyo",
+        "useTrueSolarTime": false,
+        "gender": "male"
+      },
+      "expected": {
+        "pillars": ["甲辰", "庚午", "丙寅", "壬辰"],
+        "correctedLocalTime": "2024-07-01T08:30",
+        "correctionMinutes": 0,
+        "normalizedSolarDate": "2024-07-01",
+        "normalizedSolarTime": "08:30",
+        "normalizedLunarDate": "2024-05-26",
+        "normalizedLunarLeapMonth": false,
+        "firstLuckCycle": { "pillar": "辛未", "startAge": 3, "startDate": "2026-05-11", "direction": "forward" },
+        "firstAnnualCycle": { "year": 2022, "pillar": "壬寅" },
+        "firstDailyCycle": { "date": "2024-07-01", "pillar": "丙寅" },
+        "firstHourlyCycle": { "dateTime": "2024-07-01 00:00:00", "pillar": "戊子" }
+      }
+    }
+  ]
+}

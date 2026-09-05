@@ -1,0 +1,34 @@
+{
+  "name": "@fengshui/api",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "knowledge:import-pdfs": "tsx scripts/import-pdf-knowledge.ts",
+    "test": "vitest run",
+    "test:postgres": "tsx scripts/test-postgres.ts",
+    "knowledge:import-books": "tsx scripts/import-expert-books.ts"
+  },
+  "dependencies": {
+    "@fastify/multipart": "^10.1.1",
+    "@fengshui/bazi-engine": "workspace:*",
+    "@fengshui/domain": "workspace:*",
+    "@fengshui/export-documents": "workspace:*",
+    "@fengshui/geo-data": "workspace:*",
+    "@fengshui/knowledge-contracts": "workspace:*",
+    "fastify": "^5.2.1",
+    "pg": "^8.23.0",
+    "playwright-core": "^1.55.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/pg": "^8.23.1",
+    "tsx": "^4.19.2",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.11"
+  }
+}

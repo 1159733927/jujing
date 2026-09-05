@@ -1,0 +1,26 @@
+{
+  "name": "@fengshui/geo-data",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./coordinate-import": "./src/coordinate-import.ts",
+    "./geonames-crosswalk": "./src/geonames-crosswalk.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit",
+    "test": "vitest run && node --experimental-strip-types --test scripts/*.node-test.mjs",
+    "import:coordinates": "node --experimental-strip-types scripts/import-coordinates.mjs",
+    "preprocess:geonames": "node --experimental-strip-types scripts/preprocess-geonames.mjs",
+    "build:geonames-artifact": "node scripts/build-geonames-artifact.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.11"
+  },
+  "dependencies": {
+    "province-city-china": "8.5.8"
+  }
+}

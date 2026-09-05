@@ -3,6 +3,7 @@
 ARG NODE_IMAGE=node:24-bookworm-slim
 ARG NGINX_IMAGE=nginx:1.27-bookworm
 ARG HARNESS_COMMIT=cd5ef8148158c3a752a658978873241fdf8e2bbc
+ARG APT_MIRROR_HOST=deb.debian.org
 
 FROM ${NODE_IMAGE} AS build
 ARG HARNESS_COMMIT
@@ -29,6 +30,7 @@ RUN corepack pnpm@11.7.0 -C deepseek-harness install --frozen-lockfile
 RUN DSH_CLIENT_COMMIT_HASH=$HARNESS_COMMIT corepack pnpm@11.7.0 -C deepseek-harness build
 
 FROM ${NODE_IMAGE} AS api
+ARG APT_MIRROR_HOST
 WORKDIR /app
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
     NODE_ENV=production \
@@ -38,7 +40,10 @@ ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
     MIGRATIONS_PATH=/app/apps/api/migrations \
     FENGSHUI_KNOWLEDGE_API_URL=http://127.0.0.1:3001 \
     PDF_BROWSER_EXECUTABLE_PATH=/usr/bin/chromium
-RUN apt-get update \
+RUN if [ "$APT_MIRROR_HOST" != "deb.debian.org" ]; then \
+      sed -i "s|deb.debian.org|$APT_MIRROR_HOST|g; s|deb.debian.org/debian-security|$APT_MIRROR_HOST/debian-security|g" /etc/apt/sources.list.d/debian.sources; \
+    fi \
+  && apt-get update \
   && apt-get install -y --no-install-recommends ca-certificates chromium fonts-noto-cjk \
   && rm -rf /var/lib/apt/lists/* \
   && corepack enable

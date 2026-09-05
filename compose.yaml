@@ -22,6 +22,7 @@ services:
       args:
         NODE_IMAGE: ${NODE_IMAGE:-node:24-bookworm-slim}
         NGINX_IMAGE: ${NGINX_IMAGE:-nginx:1.27-bookworm}
+        APT_MIRROR_HOST: ${APT_MIRROR_HOST:-deb.debian.org}
     restart: unless-stopped
     depends_on:
       db:
@@ -62,6 +63,7 @@ services:
       args:
         NODE_IMAGE: ${NODE_IMAGE:-node:24-bookworm-slim}
         NGINX_IMAGE: ${NGINX_IMAGE:-nginx:1.27-bookworm}
+        APT_MIRROR_HOST: ${APT_MIRROR_HOST:-deb.debian.org}
     restart: unless-stopped
     depends_on:
       api:
@@ -76,6 +78,7 @@ services:
       args:
         NODE_IMAGE: ${NODE_IMAGE:-node:24-bookworm-slim}
         NGINX_IMAGE: ${NGINX_IMAGE:-nginx:1.27-bookworm}
+        APT_MIRROR_HOST: ${APT_MIRROR_HOST:-deb.debian.org}
     restart: unless-stopped
     depends_on:
       api:

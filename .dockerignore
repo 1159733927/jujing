@@ -7,7 +7,6 @@ node_modules
 **/node_modules
 **/.DS_Store
 **/dist
-**/lib
 deepseek-harness/.git
 deepseek-harness/node_modules
 deepseek-harness/**/node_modules

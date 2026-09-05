@@ -2,6 +2,7 @@
 
 ARG NODE_IMAGE=node:24-bookworm-slim
 ARG NGINX_IMAGE=nginx:1.27-bookworm
+ARG HARNESS_COMMIT=cd5ef8148158c3a752a658978873241fdf8e2bbc
 
 FROM ${NODE_IMAGE} AS build
 WORKDIR /app
@@ -24,7 +25,7 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm build
 RUN corepack pnpm@11.7.0 -C deepseek-harness install --frozen-lockfile
-RUN corepack pnpm@11.7.0 -C deepseek-harness build
+RUN DSH_CLIENT_COMMIT_HASH=$HARNESS_COMMIT corepack pnpm@11.7.0 -C deepseek-harness build
 
 FROM ${NODE_IMAGE} AS api
 WORKDIR /app

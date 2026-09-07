@@ -33,6 +33,8 @@ pnpm dev:demo
 
 本地 `pnpm dev:demo` 未显式设置后台凭证时，默认使用 `admin / admin123`。该弱密码仅用于本机演示；部署时必须通过 `ADMIN_USERNAME` 和 `ADMIN_PASSWORD` 覆盖。
 
+服务器生产部署后，运行 `PROD_SMOKE_ORIGIN=http://<服务器或域名> pnpm smoke:prod` 做只读验收。它会检查公网前台、命盘页、报告页、后台页、API health/ready，以及出生地点坐标兜底是否已部署；不会触发报告生成，也不会调用 DeepSeek。
+
 `pnpm smoke:demo` 默认把“报告生成链路 ready”作为投资人演示硬门槛；如果只是开发阶段临时检查页面壳，可以显式运行 `ALLOW_REPORT_NOT_READY=1 pnpm smoke:demo` 放宽这一项。
 
 需要验证“独立后台下发账号 → C 端登录 → 多成员命盘 → 创建报告 → 历史报告归档/回收站/恢复”的真实浏览器链路时，运行：

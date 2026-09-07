@@ -53,6 +53,14 @@ function click(element: Element) {
   })
 }
 
+function setInputValue(input: HTMLInputElement, value: string) {
+  act(() => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, value)
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    input.dispatchEvent(new Event('change', { bubbles: true }))
+  })
+}
+
 function buttonInColumn(columnIndex: number, text: string): Element {
   const column = document.querySelectorAll('.picker-column')[columnIndex]
   const button = Array.from(column?.querySelectorAll('button') ?? [])
@@ -100,11 +108,23 @@ describe('birth date/time picker interaction', () => {
     const timeTrigger = container.querySelectorAll('button.datetime-trigger')[1]
     click(timeTrigger)
 
-    click(buttonInColumn(3, '12'))
-    click(buttonInColumn(4, '03'))
+    const timeInput = document.querySelector('input[aria-label="出生时刻"]') as HTMLInputElement
+    setInputValue(timeInput, '12:03')
     click(document.querySelector('button.picker-confirm')!)
 
     expect(setBirth).toHaveBeenCalledWith(expect.objectContaining({ time: '12:03' }))
+    cleanup(root, container)
+  })
+
+  it('offers one-tap common birth times without scrolling hour and minute columns', () => {
+    const { container, root, setBirth } = renderDateTimePicker()
+    click(container.querySelectorAll('button.datetime-trigger')[1]!)
+
+    expect(document.querySelectorAll('.picker-column')).toHaveLength(3)
+    click(Array.from(document.querySelectorAll('.birth-clock-shortcuts button')).find((button) => button.textContent?.includes('午时'))!)
+    click(document.querySelector('button.picker-confirm')!)
+
+    expect(setBirth).toHaveBeenCalledWith(expect.objectContaining({ time: '12:00' }))
     cleanup(root, container)
   })
 
@@ -113,7 +133,7 @@ describe('birth date/time picker interaction', () => {
     const timeTrigger = container.querySelectorAll('button.datetime-trigger')[1]
     click(timeTrigger)
 
-    click(buttonInColumn(3, '12'))
+    click(Array.from(document.querySelectorAll('.birth-clock-shortcuts button')).find((button) => button.textContent?.includes('午时'))!)
     click(Array.from(document.querySelectorAll('button')).find((button) => button.textContent === '取消')!)
 
     expect(setBirth).not.toHaveBeenCalled()

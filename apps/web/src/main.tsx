@@ -2015,13 +2015,34 @@ export function BirthDateTimePicker({ birth, setBirth, inputMode = 'birth-data',
             </label>)}
           </div>
         </div>}
-        {pickerMode !== 'four-pillars' && <div className="picker-columns">
-          <PickerColumn title="年" values={YEARS} value={selected.year} onSelect={(year) => setPart({ year })} />
-          {pickerMode === 'lunar' ? <div className="picker-column"><b>月</b><div>{currentLunarMonthOptions.map((month) => <button type="button" key={month.key} data-selected={month.month === selected.month && month.leap === draft.lunarLeapMonth} onClick={() => setLunarMonth(month)}>{month.label}</button>)}</div></div> : <PickerColumn title="月" values={MONTHS} value={selected.month} onSelect={(month) => setPart({ month })} />}
-          <PickerColumn title="日" values={Array.from({ length: selectedMonthDays }, (_, index) => index + 1)} value={validDay} onSelect={(day) => setPart({ day })} />
-          <PickerColumn title="时" values={HOURS} value={selected.hour} onSelect={(hour) => setPart({ hour })} />
-          <PickerColumn title="分" values={MINUTES} value={selected.minute} onSelect={(minute) => setPart({ minute })} />
-        </div>}
+        {pickerMode !== 'four-pillars' && <>
+          <div className="picker-columns date-picker-columns">
+            <PickerColumn title="年" values={YEARS} value={selected.year} onSelect={(year) => setPart({ year })} />
+            {pickerMode === 'lunar' ? <div className="picker-column"><b>月</b><div>{currentLunarMonthOptions.map((month) => <button type="button" key={month.key} data-selected={month.month === selected.month && month.leap === draft.lunarLeapMonth} onClick={() => setLunarMonth(month)}>{month.label}</button>)}</div></div> : <PickerColumn title="月" values={MONTHS} value={selected.month} onSelect={(month) => setPart({ month })} />}
+            <PickerColumn title="日" values={Array.from({ length: selectedMonthDays }, (_, index) => index + 1)} value={validDay} onSelect={(day) => setPart({ day })} />
+          </div>
+          <div className="birth-clock-field">
+            <label htmlFor="birth-clock-input">出生时刻</label>
+            <input
+              id="birth-clock-input"
+              aria-label="出生时刻"
+              type="time"
+              step="60"
+              value={draft.time}
+              onChange={(event) => {
+                const [hour, minute] = event.target.value.split(':').map(Number)
+                if (Number.isInteger(hour) && Number.isInteger(minute)) setPart({ hour, minute })
+              }}
+            />
+            <div className="birth-clock-shortcuts" aria-label="常用出生时刻">
+              {[['子时', 0], ['卯时', 6], ['午时', 12], ['酉时', 18], ['晚间', 21]].map(([label, hour]) => <button
+                type="button"
+                key={label}
+                onClick={() => setPart({ hour: Number(hour), minute: 0 })}
+              >{label}<small>{String(hour).padStart(2, '0')}:00</small></button>)}
+            </div>
+          </div>
+        </>}
         <div className="picker-actions">
           <button type="button" onClick={cancelPicker}>取消</button>
           <button className="picker-confirm" type="button" disabled={!canConfirm} onClick={confirmPicker}>确定</button>

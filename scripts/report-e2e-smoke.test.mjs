@@ -157,6 +157,7 @@ describe('report e2e smoke verifier', () => {
     const created = calls.find((call) => call.url.endsWith('/v1/reports'))
     const createdBody = JSON.parse(created.options.body)
     assert.equal(createdBody.birth.placeCode, '330106')
+    assert.equal(createdBody.birth.gender, 'male')
     assert.equal(createdBody.ruleProfileVersionId, 'demo-profile-v2')
     assert.deepEqual(createdBody.residence, {
       facing: 'south',

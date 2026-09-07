@@ -535,7 +535,7 @@ export async function runReportE2eSmoke({
     body: JSON.stringify({
       visionConsent: true,
       ruleProfileVersionId,
-      birth: { date: '1992-08-18', time: '09:30', placeCode: '330106' },
+      birth: { date: '1992-08-18', time: '09:30', placeCode: '330106', gender: 'male' },
       residence: {
         facing: 'south',
          layoutNote: '8029 单套户型图：图面上北下南；入户门在东南侧；客厅在东侧；书房在北侧；餐厅在南侧偏东；厨房在南侧凸出；卫生间靠近中宫。已知住宅信息确认整体朝南。',

@@ -68,6 +68,7 @@ user_account（admin 下发账号）
 每个新生成的命盘版本在 `bazi.timeProfile.runtimeProvenance` 中保存实际使用的 Node Intl、TZDB、ICU、CLDR 与 Unicode 版本标识（仅记录当前运行时实际提供的字段，不含时间戳、路径或机器标识）。这些字段随完整 `BaziChart` 一起进入文件或 PostgreSQL JSON 快照，不需要独立数据表。旧版本缺少该字段时按“旧版本未记录”读取，不得用当前服务器版本回填历史结果。
 - `POST /v1/reports/:id/share` / `DELETE /v1/reports/:id/share`：只允许报告创建者为未归档、已完成、validator 通过且 `qualityStatus: passed` 的报告创建或撤销分享访问。服务端只保存 token 的 SHA-256 hash，重复创建会旋转 token 并让旧 token 失效，默认 7 天过期；`qualityStatus` 为 `pending`、`running`、`failed` 或报告已归档时创建分享返回 `409`。
 - `GET /v1/shared-reports/:id`：不依赖匿名 cookie，只接受 `x-report-share-token`。缺失、错误、超长、过期、已撤销 token、报告被归档、报告质检状态不再为 `passed` 与不存在报告统一返回 `404`；成功响应使用 `private, no-store` 并复用脱敏报告结构，不暴露 `principalId`、`shareAccess`、`reviewDraft` 或私有上传 `fileId`。
+- `GET /v1/shared-reports/:id/pdf`：同样只接受 `x-report-share-token`，不依赖登录 cookie；鉴权、过期、归档和质检状态规则与分享正文读取一致。成功时复用报告 PDF 白名单模板并返回私有禁缓存的 `application/pdf` 附件；缺失或错误 token 统一返回 `404`，未暴露内部主体、分享 hash 或上传文件标识。
 
 报告 worker 使用两套彼此独立的持久状态：`runLease.workerId + attempt` 只负责并发 fencing，`pipelineCheckpoint` 负责业务断点。citations、视觉结果、规则结果、专业推理、Harness 草稿以及每次质量审核/修订完成后都会先通过 `saveClaimed` 落库，再进入下一阶段。服务重启只会跳过“checkpoint 与对应输出同时存在”的阶段；旧报告缺 checkpoint 时保守重跑。首版通过 validator 后先保存为 `completed` 且 `qualityStatus: pending`，后台质检运行中为 `running`，通过后为 `passed`，失败时保留首版并保存 `qualityStatus: failed`。失去 lease 的旧 worker 不清理住宅图片，只有当前 worker 成功保存整体 `failed`、`qualityStatus: passed` 或 `qualityStatus: failed` 的终态后才清理。
 

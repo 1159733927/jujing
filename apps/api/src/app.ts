@@ -1,4 +1,4 @@
-import Fastify from 'fastify'
+import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify'
 import multipart from '@fastify/multipart'
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
@@ -456,6 +456,53 @@ export function buildApp(
       hasCurrentValidatorApproval(record) &&
       record.qualityReviews?.at(-1)?.verdict === 'pass' &&
       (record.qualityStatus === undefined || record.qualityStatus === 'passed')
+  }
+  function reportCanBeExportedAsPdf(record: ReportRecord) {
+    return !record.archivedAt && record.status === 'completed' && Boolean(record.report?.trim()) && hasCurrentValidatorApproval(record)
+  }
+  async function sendReportPdf(record: ReportRecord, request: FastifyRequest, reply: FastifyReply) {
+    if (!reportCanBeExportedAsPdf(record)) {
+      return reply.code(409).send({ error: 'report is not ready for PDF export' })
+    }
+    if ('inputMode' in record.bazi || typeof record.bazi.correctedLocalTime !== 'string' || typeof record.bazi.correctionMinutes !== 'number') {
+      return reply.code(422).send({ error: 'PDF export for reports using manual four-pillar charts is not supported yet' })
+    }
+    try {
+      const pdf = await reportPdfRenderer.render({
+        id: record.id,
+        status: 'completed',
+        createdAt: record.createdAt,
+        report: record.report,
+        chartProfileId: record.chartProfileId,
+        chartVersionId: record.chartVersionId,
+        residenceProfileId: record.residenceProfileId,
+        residenceVersionId: record.residenceVersionId,
+        bazi: {
+          pillars: record.bazi.pillars,
+          correctedLocalTime: record.bazi.correctedLocalTime,
+          correctionMinutes: record.bazi.correctionMinutes,
+          ruleVersion: record.bazi.ruleVersion,
+          timeCorrectionRuleVersion: record.bazi.timeCorrectionRuleVersion,
+          professional: record.bazi.professional,
+          timeProfile: record.bazi.timeProfile,
+        },
+        vision: record.vision,
+        citations: record.citations,
+        evaluatedRules: record.evaluatedRules,
+      })
+      return reply
+        .header('Content-Type', 'application/pdf')
+        .header('Content-Disposition', `attachment; filename="fengshui-report-${record.id}.pdf"`)
+        .header('Cache-Control', 'private, no-store')
+        .header('X-Content-Type-Options', 'nosniff')
+        .send(pdf)
+    } catch (error) {
+      request.log.error({ err: error, reportId: record.id }, 'report PDF generation failed')
+      if (error instanceof ReportPdfUnavailableError) {
+        return reply.code(503).send({ error: 'report PDF generation unavailable' })
+      }
+      return reply.code(503).send({ error: 'report PDF generation unavailable' })
+    }
   }
   function hasSelectedBirthplace(input: Partial<BirthInput> | undefined): input is BirthInputRequest & { province: string; city: string; district: string } {
     return Boolean(
@@ -2342,48 +2389,7 @@ export function buildApp(
     if (!principal) return reply.code(requireUserAuthentication ? 401 : 404).send({ error: requireUserAuthentication ? 'authentication required' : 'report not found' })
     const record = await repository.getOwned(request.params.id, principal.id)
     if (!record) return reply.code(404).send({ error: 'report not found' })
-    if (record.archivedAt || record.status !== 'completed' || !record.report?.trim() || !hasCurrentValidatorApproval(record)) {
-      return reply.code(409).send({ error: 'report is not ready for PDF export' })
-    }
-    if ('inputMode' in record.bazi || typeof record.bazi.correctedLocalTime !== 'string' || typeof record.bazi.correctionMinutes !== 'number') {
-      return reply.code(422).send({ error: 'PDF export for reports using manual four-pillar charts is not supported yet' })
-    }
-    try {
-      const pdf = await reportPdfRenderer.render({
-        id: record.id,
-        status: record.status,
-        createdAt: record.createdAt,
-        report: record.report,
-        chartProfileId: record.chartProfileId,
-        chartVersionId: record.chartVersionId,
-        residenceProfileId: record.residenceProfileId,
-        residenceVersionId: record.residenceVersionId,
-        bazi: {
-          pillars: record.bazi.pillars,
-          correctedLocalTime: record.bazi.correctedLocalTime,
-          correctionMinutes: record.bazi.correctionMinutes,
-          ruleVersion: record.bazi.ruleVersion,
-          timeCorrectionRuleVersion: record.bazi.timeCorrectionRuleVersion,
-          professional: record.bazi.professional,
-          timeProfile: record.bazi.timeProfile,
-        },
-        vision: record.vision,
-        citations: record.citations,
-        evaluatedRules: record.evaluatedRules,
-      })
-      return reply
-        .header('Content-Type', 'application/pdf')
-        .header('Content-Disposition', `attachment; filename="fengshui-report-${record.id}.pdf"`)
-        .header('Cache-Control', 'private, no-store')
-        .header('X-Content-Type-Options', 'nosniff')
-        .send(pdf)
-    } catch (error) {
-      request.log.error({ err: error, reportId: record.id }, 'report PDF generation failed')
-      if (error instanceof ReportPdfUnavailableError) {
-        return reply.code(503).send({ error: 'report PDF generation unavailable' })
-      }
-      return reply.code(503).send({ error: 'report PDF generation unavailable' })
-    }
+    return sendReportPdf(record, request, reply)
   })
   app.post<{ Params: { id: string } }>('/v1/reports/:id/share', async (request, reply) => {
     const principal = await principalFromCookie(request.headers.cookie)
@@ -2509,6 +2515,19 @@ export function buildApp(
     const publicRecord = publicReportRecord(record)
     startReport(record.id)
     return reply.header('Cache-Control', 'private, no-store').code(202).send(publicRecord)
+  })
+  app.get<{ Params: { id: string } }>('/v1/shared-reports/:id/pdf', async (request, reply) => {
+    const record = await repository.get(request.params.id)
+    const shareAccess = record?.shareAccess
+    const expiresAtMs = shareAccess ? Date.parse(shareAccess.expiresAt) : Number.NaN
+    if (!record || !shareAccess || !reportCanBeShared(record) || !Number.isFinite(expiresAtMs) || expiresAtMs <= Date.now()) {
+      return reply.code(404).send({ error: 'report not found' })
+    }
+    const token = request.headers['x-report-share-token']
+    if (!tokenHashMatches(typeof token === 'string' ? token : undefined, shareAccess.tokenHash)) {
+      return reply.code(404).send({ error: 'report not found' })
+    }
+    return sendReportPdf(record, request, reply)
   })
   app.get<{ Params: { id: string } }>('/v1/shared-reports/:id', async (request, reply) => {
     const record = await repository.get(request.params.id)

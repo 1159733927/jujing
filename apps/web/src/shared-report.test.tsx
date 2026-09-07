@@ -84,7 +84,7 @@ describe('shared report route', () => {
     expect(metaLabels.filter((label) => label === '命盘')).toHaveLength(1)
     expect(container.querySelector('.top-navigation')).toBeNull()
     expect(container.textContent).not.toContain('我的报告')
-    expect(container.textContent).not.toContain('下载 PDF')
+    expect(container.textContent).toContain('下载 PDF')
     expect(setItem.mock.calls.flat().join(' ')).not.toContain('frag-token')
     const reportBody = container.querySelector('.report-copy')
     const evidence = container.querySelector<HTMLDetailsElement>('.evidence-summary')

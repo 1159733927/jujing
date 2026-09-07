@@ -298,6 +298,7 @@ const queuedReportRecord = (overrides: Partial<ReportRecord> = {}): ReportRecord
 
 async function createShareableReportFixture(
   reportText = '人宅合拍正式报告',
+  options: { reportPdfRenderer?: ReportPdfRenderer } = {},
 ): Promise<{ app: ReturnType<typeof buildApp>; repository: ReportRepository; reportId: string; ownerCookie: string }> {
   const directory = await mkdtemp(join(tmpdir(), 'fengshui-share-report-'))
   const repository = new ReportRepository(join(directory, 'reports.json'))
@@ -308,6 +309,14 @@ async function createShareableReportFixture(
     async () => ({ report: reportText, generationProvenance: generationProvenance('pass') }),
     { analyze: async (photos) => photos.map((photo) => ({ fileId: photo.fileId, room: photo.room, summary: '分享测试空间', observedElements: [], uncertainties: [] })) },
     new ChartRepository(join(directory, 'charts.json')),
+    new BaziRuleProfileRepository(join(directory, 'bazi-rule-profiles.json')),
+    join(directory, 'wenzhen-fixtures.json'),
+    new TestWenzhenEvidenceStore(join(directory, 'wenzhen-evidence')),
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    options.reportPdfRenderer,
   )
   const created = await app.inject({ method: 'POST', url: '/v1/reports', payload: reportPayload(`share-${crypto.randomUUID()}.jpg`) })
   expect(created.statusCode).toBe(202)
@@ -3820,6 +3829,50 @@ describe('report API', () => {
     expect(read.json()).not.toHaveProperty('shareAccess')
     expect(read.json().submission.photos[0]).not.toHaveProperty('fileId')
     expect(JSON.stringify(read.json())).not.toContain('share-')
+    await app.close()
+  })
+
+  it('exports a shared report PDF with only the share token and no owner cookie', async () => {
+    const rendered: Array<{ id: string; chartProfileId?: string; chartVersionId?: string; residenceProfileId?: string; residenceVersionId?: string }> = []
+    const { app, reportId, ownerCookie } = await createShareableReportFixture('分享 PDF 正式报告', {
+      reportPdfRenderer: {
+        render: async (snapshot) => {
+          rendered.push({
+            id: snapshot.id,
+            chartProfileId: snapshot.chartProfileId,
+            chartVersionId: snapshot.chartVersionId,
+            residenceProfileId: snapshot.residenceProfileId,
+            residenceVersionId: snapshot.residenceVersionId,
+          })
+          return Buffer.from('%PDF-1.7\nshared report')
+        },
+      },
+    })
+    const shared = await app.inject({ method: 'POST', url: `/v1/reports/${reportId}/share`, headers: { cookie: ownerCookie } })
+    expect(shared.statusCode).toBe(200)
+
+    const response = await app.inject({
+      method: 'GET',
+      url: `/v1/shared-reports/${reportId}/pdf`,
+      headers: { 'x-report-share-token': shared.json().token },
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.headers['content-type']).toBe('application/pdf')
+    expect(response.headers['content-disposition']).toBe(`attachment; filename="fengshui-report-${reportId}.pdf"`)
+    expect(response.headers['cache-control']).toBe('private, no-store')
+    expect(response.headers['x-content-type-options']).toBe('nosniff')
+    expect(response.rawPayload.subarray(0, 5).toString()).toBe('%PDF-')
+    expect(rendered).toEqual([{
+      id: reportId,
+      chartProfileId: expect.any(String),
+      chartVersionId: expect.any(String),
+      residenceProfileId: expect.any(String),
+      residenceVersionId: expect.any(String),
+    }])
+
+    expect((await app.inject({ method: 'GET', url: `/v1/shared-reports/${reportId}/pdf` })).statusCode).toBe(404)
+    expect((await app.inject({ method: 'GET', url: `/v1/shared-reports/${reportId}/pdf`, headers: { 'x-report-share-token': 'wrong-token' } })).statusCode).toBe(404)
     await app.close()
   })
 

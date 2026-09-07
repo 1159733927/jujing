@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState, type MouseEvent } from
 import { createRoot } from 'react-dom/client'
 import type { BaziFlowChart, ReportPhase } from '@fengshui/domain'
 import { downloadChartPdf, exportChartAsPng, type ChartExportSnapshot } from './chart-export'
-import { downloadReportPdf } from './report-export'
+import { downloadReportPdf, downloadSharedReportPdf } from './report-export'
 import { ReportMarkdown } from './report-markdown'
 import { buildReportGenerationSummary, type ReportGenerationProvenance } from './report-provenance'
 import {
@@ -3222,9 +3222,24 @@ function SharedReportPage() {
   const [sharedReport, setSharedReport] = useState<Report | null>(null)
   const [loading, setLoading] = useState(Boolean(route?.accessToken))
   const [error, setError] = useState(route?.accessToken ? '' : '分享链接无效或已过期。')
+  const [pdfExporting, setPdfExporting] = useState(false)
+  const [pdfError, setPdfError] = useState('')
   const canShowSharedReport = sharedReport?.status === 'completed'
     && Boolean(sharedReport.report?.trim())
     && sharedReport.generationProvenance?.validatorVersion === CURRENT_REPORT_VALIDATOR_VERSION
+
+  async function handleDownloadSharedPdf() {
+    if (!route?.accessToken || !sharedReport?.id) return
+    setPdfExporting(true)
+    setPdfError('')
+    try {
+      await downloadSharedReportPdf(sharedReport.id, route.accessToken)
+    } catch (cause) {
+      setPdfError(cause instanceof Error ? cause.message : 'PDF 暂时无法下载，请稍后重试。')
+    } finally {
+      setPdfExporting(false)
+    }
+  }
 
   useEffect(() => {
     if (!route?.accessToken) return
@@ -3272,8 +3287,14 @@ function SharedReportPage() {
     {!loading && canShowSharedReport && <article className="report-detail-panel shared-report-detail">
       <div className="section-head">
         <div><p className="kicker">READ ONLY</p><h2>住宅文化分析报告</h2></div>
-        <span className="readonly-badge">只读分享</span>
+        <div className="shared-report-actions">
+          <span className="readonly-badge">只读分享</span>
+          <button type="button" className="ghost-button" onClick={handleDownloadSharedPdf} disabled={pdfExporting}>
+            {pdfExporting ? '正在准备 PDF' : '下载 PDF'}
+          </button>
+        </div>
       </div>
+      {pdfError && <p className="inline-error" role="alert">{pdfError}</p>}
       <ReportMarkdown report={sharedReport.report ?? ''} />
       <ReportEvidenceSummary report={sharedReport} />
       <details className="provenance report-meta-disclosure">

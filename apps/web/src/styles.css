@@ -360,6 +360,9 @@ code{font-family:"SF Mono",ui-monospace,monospace;background:#f1eadf;border:1px 
 .shared-report-state.error-state h2,.shared-report-state.error-state p{color:var(--risk)}
 .shared-report-detail{position:static;margin-top:24px}
 .readonly-badge{border:1px solid #d8c8ad;background:#fff8ed;border-radius:999px;padding:8px 11px;color:#6f5b39;font-size:12px;font-weight:800}
+.shared-report-actions{display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.ghost-button{min-height:36px;padding:7px 12px;background:#fff8ed;border-color:#d8c3a4;color:#29483b;font-size:12px;font-weight:800}
+.inline-error{margin:10px 0 0;color:var(--risk);background:#fff0ec;border:1px solid #e1b7ae;border-radius:9px;padding:9px 11px;font-size:13px;line-height:1.5}
 .chart-page{min-height:100vh}
 .chart-hero{display:flex;justify-content:space-between;gap:40px;align-items:end;padding:66px 0 34px;border-bottom:1px solid var(--line)}
 .chart-hero>div{max-width:720px}

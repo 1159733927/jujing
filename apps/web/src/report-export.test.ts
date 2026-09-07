@@ -3,6 +3,7 @@ import {
   buildReportExportHtml,
   buildReportPrintTitle,
   canPrintReport,
+  downloadSharedReportPdf,
   downloadReportPdf,
   printReportAsPdf,
   type ReportExportSnapshot,
@@ -145,5 +146,43 @@ describe('report export builders', () => {
     expect(click).toHaveBeenCalledOnce()
     expect(remove).toHaveBeenCalledOnce()
     expect(() => downloadReportPdf('   ')).toThrow('报告 ID')
+  })
+
+  it('downloads a shared report PDF with the fragment token as a private header', async () => {
+    const click = vi.fn()
+    const remove = vi.fn()
+    const anchor = { href: '', download: 'sentinel', rel: '', click, remove }
+    const appendChild = vi.fn()
+    const createObjectURL = vi.fn(() => 'blob:shared-report-pdf')
+    const revokeObjectURL = vi.fn()
+    const fetchMock = vi.fn(async () => new Response(new Blob(['%PDF-1.7'], { type: 'application/pdf' })))
+    vi.stubGlobal('document', {
+      createElement: vi.fn(() => anchor),
+      body: { appendChild },
+    })
+    vi.stubGlobal('URL', { createObjectURL, revokeObjectURL })
+
+    await downloadSharedReportPdf('report/001', 'share token/value?', fetchMock as unknown as typeof fetch)
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/v1/shared-reports/report%2F001/pdf', {
+      headers: { 'x-report-share-token': 'share token/value?' },
+    })
+    expect(createObjectURL).toHaveBeenCalledOnce()
+    expect(anchor.href).toBe('blob:shared-report-pdf')
+    expect(anchor.download).toBe('')
+    expect(anchor.rel).toBe('noopener')
+    expect(appendChild).toHaveBeenCalledWith(anchor)
+    expect(click).toHaveBeenCalledOnce()
+    expect(remove).toHaveBeenCalledOnce()
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:shared-report-pdf')
+    await expect(downloadSharedReportPdf('   ', 'token', fetchMock as unknown as typeof fetch)).rejects.toThrow('报告 ID')
+    await expect(downloadSharedReportPdf('report-1', '   ', fetchMock as unknown as typeof fetch)).rejects.toThrow('分享访问令牌')
+  })
+
+  it('shows a consumer-facing error when shared PDF download is rejected', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ error: 'not found' }), { status: 404 }))
+
+    await expect(downloadSharedReportPdf('report-1', 'bad-token', fetchMock as unknown as typeof fetch))
+      .rejects.toThrow('分享报告 PDF 暂时无法下载')
   })
 })

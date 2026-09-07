@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import { createRoot } from 'react-dom/client'
 import type { BaziFlowChart, ReportPhase } from '@fengshui/domain'
-import { downloadChartPdf, exportChartAsPng, type ChartExportSnapshot } from './chart-export'
+import { downloadChartPdf, downloadSharedChartPdf, exportChartAsPng, type ChartExportSnapshot } from './chart-export'
 import { downloadReportPdf, downloadSharedReportPdf } from './report-export'
 import { ReportMarkdown } from './report-markdown'
 import { buildReportGenerationSummary, type ReportGenerationProvenance } from './report-provenance'
@@ -3223,6 +3223,7 @@ function SharedReportPage() {
   const [loading, setLoading] = useState(Boolean(route?.accessToken))
   const [error, setError] = useState(route?.accessToken ? '' : '分享链接无效或已过期。')
   const [pdfExporting, setPdfExporting] = useState(false)
+  const [chartPdfExporting, setChartPdfExporting] = useState(false)
   const [pdfError, setPdfError] = useState('')
   const canShowSharedReport = sharedReport?.status === 'completed'
     && Boolean(sharedReport.report?.trim())
@@ -3238,6 +3239,19 @@ function SharedReportPage() {
       setPdfError(cause instanceof Error ? cause.message : 'PDF 暂时无法下载，请稍后重试。')
     } finally {
       setPdfExporting(false)
+    }
+  }
+
+  async function handleDownloadSharedChartPdf() {
+    if (!route?.accessToken || !sharedReport?.id) return
+    setChartPdfExporting(true)
+    setPdfError('')
+    try {
+      await downloadSharedChartPdf(sharedReport.id, route.accessToken)
+    } catch (cause) {
+      setPdfError(cause instanceof Error ? cause.message : '命盘 PDF 暂时无法下载，请稍后重试。')
+    } finally {
+      setChartPdfExporting(false)
     }
   }
 
@@ -3290,7 +3304,10 @@ function SharedReportPage() {
         <div className="shared-report-actions">
           <span className="readonly-badge">只读分享</span>
           <button type="button" className="ghost-button" onClick={handleDownloadSharedPdf} disabled={pdfExporting}>
-            {pdfExporting ? '正在准备 PDF' : '下载 PDF'}
+            {pdfExporting ? '正在准备报告 PDF' : '下载报告 PDF'}
+          </button>
+          <button type="button" className="ghost-button" onClick={handleDownloadSharedChartPdf} disabled={chartPdfExporting}>
+            {chartPdfExporting ? '正在准备命盘 PDF' : '下载命盘 PDF'}
           </button>
         </div>
       </div>

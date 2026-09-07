@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { buildChartExportHtml, buildChartExportSvg, createChartExportViewModel, type ChartExportSnapshot } from './chart-export'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { buildChartExportHtml, buildChartExportSvg, createChartExportViewModel, downloadSharedChartPdf, type ChartExportSnapshot } from './chart-export'
 
 const snapshot: ChartExportSnapshot = {
   profileId: 'profile-one',
@@ -43,6 +43,10 @@ const snapshot: ChartExportSnapshot = {
   },
 }
 
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
 describe('chart export builders', () => {
   it('builds printable HTML from a saved chart snapshot without embedding private media', () => {
     const html = buildChartExportHtml(snapshot)
@@ -75,5 +79,43 @@ describe('chart export builders', () => {
     expect(svg).toContain('width="1200"')
     expect(svg).toContain('壬申')
     expect(svg).toContain('本图片由本地已保存命盘生成')
+  })
+
+  it('downloads a shared chart PDF with the fragment token as a private header', async () => {
+    const click = vi.fn()
+    const remove = vi.fn()
+    const anchor = { href: '', download: 'sentinel', rel: '', click, remove }
+    const appendChild = vi.fn()
+    const createObjectURL = vi.fn(() => 'blob:shared-chart-pdf')
+    const revokeObjectURL = vi.fn()
+    const fetchMock = vi.fn(async () => new Response(new Blob(['%PDF-1.7'], { type: 'application/pdf' })))
+    vi.stubGlobal('document', {
+      createElement: vi.fn(() => anchor),
+      body: { appendChild },
+    })
+    vi.stubGlobal('URL', { createObjectURL, revokeObjectURL })
+
+    await downloadSharedChartPdf('report/001', 'share token/value?', fetchMock as unknown as typeof fetch)
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/v1/shared-reports/report%2F001/chart-pdf', {
+      headers: { 'x-report-share-token': 'share token/value?' },
+    })
+    expect(createObjectURL).toHaveBeenCalledOnce()
+    expect(anchor.href).toBe('blob:shared-chart-pdf')
+    expect(anchor.download).toBe('')
+    expect(anchor.rel).toBe('noopener')
+    expect(appendChild).toHaveBeenCalledWith(anchor)
+    expect(click).toHaveBeenCalledOnce()
+    expect(remove).toHaveBeenCalledOnce()
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:shared-chart-pdf')
+    await expect(downloadSharedChartPdf('   ', 'token', fetchMock as unknown as typeof fetch)).rejects.toThrow('报告 ID')
+    await expect(downloadSharedChartPdf('report-1', '   ', fetchMock as unknown as typeof fetch)).rejects.toThrow('分享访问令牌')
+  })
+
+  it('shows a consumer-facing error when shared chart PDF download is rejected', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ error: 'not found' }), { status: 404 }))
+
+    await expect(downloadSharedChartPdf('report-1', 'bad-token', fetchMock as unknown as typeof fetch))
+      .rejects.toThrow('分享命盘 PDF 暂时无法下载')
   })
 })

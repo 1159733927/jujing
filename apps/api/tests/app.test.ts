@@ -298,7 +298,7 @@ const queuedReportRecord = (overrides: Partial<ReportRecord> = {}): ReportRecord
 
 async function createShareableReportFixture(
   reportText = '人宅合拍正式报告',
-  options: { reportPdfRenderer?: ReportPdfRenderer } = {},
+  options: { chartPdfRenderer?: ChartPdfRenderer; reportPdfRenderer?: ReportPdfRenderer } = {},
 ): Promise<{ app: ReturnType<typeof buildApp>; repository: ReportRepository; reportId: string; ownerCookie: string }> {
   const directory = await mkdtemp(join(tmpdir(), 'fengshui-share-report-'))
   const repository = new ReportRepository(join(directory, 'reports.json'))
@@ -315,7 +315,7 @@ async function createShareableReportFixture(
     undefined,
     undefined,
     undefined,
-    undefined,
+    options.chartPdfRenderer,
     options.reportPdfRenderer,
   )
   const created = await app.inject({ method: 'POST', url: '/v1/reports', payload: reportPayload(`share-${crypto.randomUUID()}.jpg`) })
@@ -3829,6 +3829,50 @@ describe('report API', () => {
     expect(read.json()).not.toHaveProperty('shareAccess')
     expect(read.json().submission.photos[0]).not.toHaveProperty('fileId')
     expect(JSON.stringify(read.json())).not.toContain('share-')
+    await app.close()
+  })
+
+  it('exports a shared report chart PDF with only the share token and no owner cookie', async () => {
+    const rendered: Array<{ profileId?: string; birthDate: string; birthTime: string; pillars: readonly [string, string, string, string]; savedAt: string }> = []
+    const { app, reportId, ownerCookie } = await createShareableReportFixture('分享命盘 PDF 正式报告', {
+      chartPdfRenderer: {
+        render: async (snapshot) => {
+          rendered.push({
+            profileId: snapshot.profileId,
+            birthDate: snapshot.birth.date,
+            birthTime: snapshot.birth.time,
+            pillars: snapshot.bazi.pillars,
+            savedAt: snapshot.savedAt,
+          })
+          return Buffer.from('%PDF-1.7\nshared chart')
+        },
+      },
+    })
+    const shared = await app.inject({ method: 'POST', url: `/v1/reports/${reportId}/share`, headers: { cookie: ownerCookie } })
+    expect(shared.statusCode).toBe(200)
+
+    const response = await app.inject({
+      method: 'GET',
+      url: `/v1/shared-reports/${reportId}/chart-pdf`,
+      headers: { 'x-report-share-token': shared.json().token },
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.headers['content-type']).toBe('application/pdf')
+    expect(response.headers['content-disposition']).toBe(`attachment; filename="bazi-chart-${reportId}.pdf"`)
+    expect(response.headers['cache-control']).toBe('private, no-store')
+    expect(response.headers['x-content-type-options']).toBe('nosniff')
+    expect(response.rawPayload.subarray(0, 5).toString()).toBe('%PDF-')
+    expect(rendered).toEqual([{
+      profileId: expect.any(String),
+      birthDate: testBirth.date,
+      birthTime: testBirth.time,
+      pillars: calculateBazi(testBirth).pillars,
+      savedAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/u),
+    }])
+
+    expect((await app.inject({ method: 'GET', url: `/v1/shared-reports/${reportId}/chart-pdf` })).statusCode).toBe(404)
+    expect((await app.inject({ method: 'GET', url: `/v1/shared-reports/${reportId}/chart-pdf`, headers: { 'x-report-share-token': 'wrong-token' } })).statusCode).toBe(404)
     await app.close()
   })
 

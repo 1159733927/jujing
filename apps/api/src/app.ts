@@ -28,6 +28,7 @@ import {
 import type {
   BaziCalculationInput,
   BaziCalculationResult,
+  BaziChart,
   BaziRuleProfileState,
   BaziRuleProfileVersionReference,
   BaziRuleTimeDefaults,
@@ -460,6 +461,11 @@ export function buildApp(
   function reportCanBeExportedAsPdf(record: ReportRecord) {
     return !record.archivedAt && record.status === 'completed' && Boolean(record.report?.trim()) && hasCurrentValidatorApproval(record)
   }
+  function isExportableBaziChart(bazi: ReportRecord['bazi']): bazi is BaziChart {
+    return !('inputMode' in bazi) &&
+      typeof bazi.correctedLocalTime === 'string' &&
+      typeof bazi.correctionMinutes === 'number'
+  }
   async function sendReportPdf(record: ReportRecord, request: FastifyRequest, reply: FastifyReply) {
     if (!reportCanBeExportedAsPdf(record)) {
       return reply.code(409).send({ error: 'report is not ready for PDF export' })
@@ -502,6 +508,34 @@ export function buildApp(
         return reply.code(503).send({ error: 'report PDF generation unavailable' })
       }
       return reply.code(503).send({ error: 'report PDF generation unavailable' })
+    }
+  }
+  async function sendReportChartPdf(record: ReportRecord, request: FastifyRequest, reply: FastifyReply) {
+    if (!reportCanBeExportedAsPdf(record)) {
+      return reply.code(409).send({ error: 'report chart is not ready for PDF export' })
+    }
+    if (isManualFourPillarsInput(record.submission.calculationInput) || !isExportableBaziChart(record.bazi)) {
+      return reply.code(422).send({ error: 'PDF export for reports using manual four-pillar charts is not supported yet' })
+    }
+    try {
+      const pdf = await chartPdfRenderer.render({
+        profileId: record.chartProfileId,
+        birth: record.submission.birth ?? record.submission.calculationInput,
+        bazi: record.bazi,
+        savedAt: record.createdAt,
+      })
+      return reply
+        .header('Content-Type', 'application/pdf')
+        .header('Content-Disposition', `attachment; filename="bazi-chart-${record.id}.pdf"`)
+        .header('Cache-Control', 'private, no-store')
+        .header('X-Content-Type-Options', 'nosniff')
+        .send(pdf)
+    } catch (error) {
+      request.log.error({ err: error, reportId: record.id, chartProfileId: record.chartProfileId, chartVersionId: record.chartVersionId }, 'shared chart PDF generation failed')
+      if (error instanceof ChartPdfUnavailableError) {
+        return reply.code(503).send({ error: 'chart PDF generation unavailable' })
+      }
+      return reply.code(503).send({ error: 'chart PDF generation unavailable' })
     }
   }
   function hasSelectedBirthplace(input: Partial<BirthInput> | undefined): input is BirthInputRequest & { province: string; city: string; district: string } {
@@ -2528,6 +2562,19 @@ export function buildApp(
       return reply.code(404).send({ error: 'report not found' })
     }
     return sendReportPdf(record, request, reply)
+  })
+  app.get<{ Params: { id: string } }>('/v1/shared-reports/:id/chart-pdf', async (request, reply) => {
+    const record = await repository.get(request.params.id)
+    const shareAccess = record?.shareAccess
+    const expiresAtMs = shareAccess ? Date.parse(shareAccess.expiresAt) : Number.NaN
+    if (!record || !shareAccess || !reportCanBeShared(record) || !Number.isFinite(expiresAtMs) || expiresAtMs <= Date.now()) {
+      return reply.code(404).send({ error: 'report not found' })
+    }
+    const token = request.headers['x-report-share-token']
+    if (!tokenHashMatches(typeof token === 'string' ? token : undefined, shareAccess.tokenHash)) {
+      return reply.code(404).send({ error: 'report not found' })
+    }
+    return sendReportChartPdf(record, request, reply)
   })
   app.get<{ Params: { id: string } }>('/v1/shared-reports/:id', async (request, reply) => {
     const record = await repository.get(request.params.id)

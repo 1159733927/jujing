@@ -215,7 +215,23 @@ async function runBrowserFlow({ webOrigin, adminOrigin, username, password, admi
     await createAccountModal.getByPlaceholder('用户登录时使用').fill(username)
     await createAccountModal.getByPlaceholder('例如：张先生').fill('E2E用户')
     await createAccountModal.getByPlaceholder('仅用于本次创建，不会回显').fill(password)
+    const createAccountResponsePromise = page.waitForResponse((response) =>
+      response.url().endsWith('/api/v1/admin/users') &&
+      response.request().method() === 'POST',
+    { timeout: 10_000 })
     await createAccountModal.locator('.ant-modal-footer button.ant-btn-primary').click({ force: true })
+    const createAccountResponse = await createAccountResponsePromise
+    const createAccountPayload = await createAccountResponse.json().catch(() => ({}))
+    if (!createAccountResponse.ok()) {
+      throw new AccountChromeE2eError(`admin account creation failed ${createAccountResponse.status()}: ${JSON.stringify(createAccountPayload)}`)
+    }
+    const accountVisibleInApi = await page.waitForFunction(async (createdUsername) => {
+      const response = await fetch('/api/v1/admin/users', { credentials: 'same-origin' })
+      if (!response.ok) return false
+      const payload = await response.json()
+      return payload.users?.some?.((user) => user.username === createdUsername)
+    }, username, { timeout: 10_000 }).catch(() => false)
+    if (!accountVisibleInApi) throw new AccountChromeE2eError(`created account ${username} was not returned by the admin list API`)
     await page.getByText(username, { exact: true }).waitFor({ state: 'visible', timeout: 10_000 })
 
     log('[account-e2e] consumer login')

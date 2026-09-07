@@ -5,7 +5,7 @@ ARG NGINX_IMAGE=nginx:1.27-bookworm
 ARG HARNESS_COMMIT=cd5ef8148158c3a752a658978873241fdf8e2bbc
 ARG APT_MIRROR_HOST=deb.debian.org
 
-FROM ${NODE_IMAGE} AS build
+FROM ${NODE_IMAGE} AS workspace-deps
 ARG HARNESS_COMMIT
 WORKDIR /app
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
@@ -24,10 +24,24 @@ COPY services/knowledge-mcp/package.json services/knowledge-mcp/package.json
 COPY fengshui-report-plugin/package.json fengshui-report-plugin/package.json
 RUN pnpm install --frozen-lockfile
 
+FROM workspace-deps AS app-build
+COPY apps apps
+COPY packages packages
+COPY services services
+COPY fengshui-report-plugin fengshui-report-plugin
+RUN pnpm build
+
+FROM workspace-deps AS api-build
+ARG HARNESS_COMMIT
 COPY deepseek-harness deepseek-harness
 RUN corepack pnpm@11.7.0 -C deepseek-harness install --frozen-lockfile
 RUN DSH_CLIENT_COMMIT_HASH=$HARNESS_COMMIT corepack pnpm@11.7.0 -C deepseek-harness build
-COPY . .
+COPY apps apps
+COPY packages packages
+COPY services services
+COPY fengshui-report-plugin fengshui-report-plugin
+COPY .agents .agents
+COPY harness.fengshui.patch.yml harness.fengshui.patch.yml
 RUN pnpm build
 
 FROM ${NODE_IMAGE} AS api
@@ -49,7 +63,7 @@ RUN if [ "$APT_MIRROR_HOST" != "deb.debian.org" ]; then \
   && rm -rf /var/lib/apt/lists/* \
   && corepack enable
 
-COPY --from=build --chown=node:node /app /app
+COPY --from=api-build --chown=node:node /app /app
 WORKDIR /app/apps/api
 USER node
 EXPOSE 3001
@@ -57,8 +71,8 @@ CMD ["node", "--import", "tsx", "src/index.ts"]
 
 FROM ${NGINX_IMAGE} AS web
 COPY infra/nginx/default.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/apps/web/dist /usr/share/nginx/html
+COPY --from=app-build /app/apps/web/dist /usr/share/nginx/html
 
 FROM ${NGINX_IMAGE} AS admin
 COPY infra/nginx/admin.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/apps/admin/dist /usr/share/nginx/html/admin
+COPY --from=app-build /app/apps/admin/dist /usr/share/nginx/html/admin

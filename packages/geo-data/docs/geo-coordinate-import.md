@@ -32,11 +32,13 @@ pnpm --filter @fengshui/geo-data build:geonames-artifact -- --force
 - 行政区划：3311 个区县级节点。
 - GeoNames 已审核坐标：2612 个（78.89%）。
 - 原演示坐标 fallback：2 个，每条明确标记 `manual-demo`。
-- 最终可选：2614 个；坐标不可用：697 个。
+- 城市级估算 fallback：667 个，每条明确标记 `city-derived`。
+- 最终可选：3281 个；坐标不可用：30 个。
 
-这是 `licensed-partial` 数据集，不是全国坐标完整库，不得对外声称 nationwide complete。
+这是 `licensed-partial` 数据集，不是全国区县精确坐标完整库，不得对外声称 nationwide complete。
 有 GeoNames 记录时它优先于原 demo 坐标；无 GeoNames 且无明确 demo fallback 时，
-该地点保持 `unavailable`，不会猜测或填充坐标。中国地点时区统一为 `Asia/Shanghai`。
+只有同城市存在可用坐标证据才会生成 `city-derived` 坐标。没有同城市可用坐标的地点保持
+`unavailable`，不会使用 `(0,0)`、跨城市默认值或相邻城市坐标。中国地点时区统一为 `Asia/Shanghai`。
 
 ## 源文件哈希
 

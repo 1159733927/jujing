@@ -72,7 +72,7 @@ type PendingSourceRequired = { status: 'unavailable'; reason: 'pending-source-re
 type BirthplaceCoordinateEvidence = {
   sourceLabel?: string
   license?: string
-  confidence?: 'verified' | 'derived-centroid' | 'manual-demo' | 'unavailable' | string
+  confidence?: 'verified' | 'derived-centroid' | 'manual-demo' | 'city-derived' | 'unavailable' | string
   note?: string
 }
 type BirthplaceDistrict = { code: string; name: string; longitude?: number; latitude?: number; coordinate?: BirthplaceCoordinateEvidence }
@@ -400,6 +400,7 @@ type BirthplaceDatasetMetadata = {
     administrativeDistrictCount: number
     licensedCoordinateCount: number
     manualFallbackCoordinateCount: number
+    cityFallbackCoordinateCount?: number
     selectableDistrictCount: number
     unavailableDistrictCount: number
   }
@@ -1061,6 +1062,7 @@ export function coordinateConfidenceLabel(confidence?: string): string {
     verified: '已审核',
     'derived-centroid': '行政区中心点',
     'manual-demo': '演示坐标',
+    'city-derived': '城市级估算',
     unavailable: '坐标待补充',
   } as Record<string, string>)[confidence ?? ''] ?? (confidence || '坐标可用')
 }

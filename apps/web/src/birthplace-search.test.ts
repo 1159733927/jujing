@@ -33,8 +33,9 @@ const dataset = {
     administrativeDistrictCount: 3311,
     licensedCoordinateCount: 2612,
     manualFallbackCoordinateCount: 2,
-    selectableDistrictCount: 2614,
-    unavailableDistrictCount: 697,
+    cityFallbackCoordinateCount: 667,
+    selectableDistrictCount: 3281,
+    unavailableDistrictCount: 30,
   },
 } as const
 
@@ -143,12 +144,13 @@ describe('birthplace API helpers', () => {
       coverage: 'licensed-partial',
       source: { label: 'province-city-china + GeoNames', license: 'MIT; CC BY 4.0' },
       sources: [{ label: 'GeoNames', license: 'CC BY 4.0' }],
-      statistics: { selectableDistrictCount: 2614, unavailableDistrictCount: 697 },
+      statistics: { selectableDistrictCount: 3281, unavailableDistrictCount: 30, cityFallbackCoordinateCount: 667 },
     })
     expect(() => normalizeBirthplaceDatasetMetadata({ version: 'missing-source' })).toThrow('出生地点数据版本信息不完整。')
     expect(birthplaceDatasetAttribution(normalizeBirthplaceDatasetMetadata(dataset))).toContain('GeoNames')
     expect(birthplaceDatasetAttribution(normalizeBirthplaceDatasetMetadata(dataset))).toContain('CC BY 4.0')
     expect(coordinateConfidenceLabel('verified')).toBe('已审核')
+    expect(coordinateConfidenceLabel('city-derived')).toBe('城市级估算')
     expect(coordinateConfidenceLabel('unavailable')).toBe('坐标待补充')
   })
 
@@ -171,7 +173,7 @@ describe('birthplace API helpers', () => {
     const place = {
       province: { code: '110000', name: '北京市', cities: [] },
       city: { code: '110100', name: '北京市', timezone: 'Asia/Shanghai', districts: [] },
-      district: { code: '110118', name: '密云区', coordinate: { confidence: 'unavailable' } },
+      district: { code: '460321', name: '西沙群岛', coordinate: { confidence: 'unavailable' } },
       selectable: false,
     }
 

@@ -46,12 +46,18 @@ export interface BirthplaceDatasetMetadata {
     administrativeDistrictCount: number
     licensedCoordinateCount: number
     manualFallbackCoordinateCount: number
+    cityFallbackCoordinateCount: number
     selectableDistrictCount: number
     unavailableDistrictCount: number
   }
 }
 
-export type BirthplaceCoordinateConfidence = 'verified' | 'derived-centroid' | 'manual-demo' | 'unavailable'
+export type BirthplaceCoordinateConfidence =
+  | 'verified'
+  | 'derived-centroid'
+  | 'manual-demo'
+  | 'city-derived'
+  | 'unavailable'
 
 export interface BirthplaceCoordinateEvidence {
   sourceLabel: string
@@ -188,7 +194,7 @@ export const ADMINISTRATIVE_BIRTHPLACE_DATASET_METADATA: BirthplaceDatasetMetada
     label: 'province-city-china + GeoNames',
     url: geonamesChinaCoordinates.metadata.sourceUrl,
     license: 'MIT (administrative hierarchy); CC BY 4.0 (GeoNames coordinates)',
-    notes: `Partial coordinate coverage only: ${geonamesChinaCoordinates.metadata.importedRecordCount}/${geonamesChinaCoordinates.metadata.administrativeDistrictCount} administrative districts have reviewed GeoNames coordinates. GeoNames dump ${geonamesChinaCoordinates.metadata.dumpDate}; CN.txt SHA-256 ${geonamesChinaCoordinates.metadata.files.places.sha256}. This is not nationwide-complete coordinate coverage.`,
+    notes: `Partial district-level coordinate coverage: ${geonamesChinaCoordinates.metadata.importedRecordCount}/${geonamesChinaCoordinates.metadata.administrativeDistrictCount} administrative districts have reviewed GeoNames coordinates. For demo usability, districts missing an exact record can use an explicitly marked city-level derived coordinate when at least one same-city district has reviewed/manual coordinates. GeoNames dump ${geonamesChinaCoordinates.metadata.dumpDate}; CN.txt SHA-256 ${geonamesChinaCoordinates.metadata.files.places.sha256}. This is not nationwide-complete district-level coordinate coverage.`,
   },
   generatedAt: '2026-08-31T00:00:00.000Z',
   coordinateSystem: 'WGS84',
@@ -211,8 +217,9 @@ export const ADMINISTRATIVE_BIRTHPLACE_DATASET_METADATA: BirthplaceDatasetMetada
     administrativeDistrictCount: geonamesChinaCoordinates.metadata.administrativeDistrictCount,
     licensedCoordinateCount: geonamesChinaCoordinates.metadata.importedRecordCount,
     manualFallbackCoordinateCount: 2,
-    selectableDistrictCount: geonamesChinaCoordinates.metadata.importedRecordCount + 2,
-    unavailableDistrictCount: geonamesChinaCoordinates.metadata.administrativeDistrictCount - geonamesChinaCoordinates.metadata.importedRecordCount - 2,
+    cityFallbackCoordinateCount: 667,
+    selectableDistrictCount: geonamesChinaCoordinates.metadata.importedRecordCount + 2 + 667,
+    unavailableDistrictCount: geonamesChinaCoordinates.metadata.administrativeDistrictCount - geonamesChinaCoordinates.metadata.importedRecordCount - 2 - 667,
   },
 }
 
@@ -330,7 +337,7 @@ const UNAVAILABLE_COORDINATE_EVIDENCE: BirthplaceCoordinateEvidence = {
   sourceLabel: 'province-city-china administrative hierarchy',
   license: 'MIT',
   confidence: 'unavailable',
-  note: 'The administrative source does not include coordinates. This district must be geocoded or matched to a licensed coordinate source before BaZi calculation.',
+  note: 'The administrative source does not include coordinates, and no same-city reviewed coordinate is available for a demo-level fallback. This district must be geocoded or matched to a licensed coordinate source before BaZi calculation.',
 }
 
 const SELECTABLE_PLACE_BY_CODE = new Map(
@@ -680,13 +687,19 @@ function buildAdministrativeBirthplaceTree(): readonly AdministrativeProvince[] 
           code: cityNode.code,
           name: cityNode.name,
           timezone: 'Asia/Shanghai',
-          districts: (cityNode.children ?? []).map((districtNode) => administrativeDistrictFromNode(districtNode)),
+          districts: applyCityCoordinateFallback(
+            cityNode.name,
+            (cityNode.children ?? []).map((districtNode) => administrativeDistrictFromNode(districtNode)),
+          ),
         }))
       : [{
           code: directControlledMunicipalityCityCode(provinceNode.code),
           name: provinceNode.name,
           timezone: 'Asia/Shanghai',
-          districts: childNodes.map((districtNode) => administrativeDistrictFromNode(districtNode)),
+          districts: applyCityCoordinateFallback(
+            provinceNode.name,
+            childNodes.map((districtNode) => administrativeDistrictFromNode(districtNode)),
+          ),
         }]
     return {
       code: provinceNode.code,
@@ -694,6 +707,40 @@ function buildAdministrativeBirthplaceTree(): readonly AdministrativeProvince[] 
       cities: cities.filter((city) => city.districts.length > 0),
     }
   }).filter((province) => province.cities.length > 0)
+}
+
+function applyCityCoordinateFallback(
+  cityName: string,
+  districts: readonly AdministrativeDistrict[],
+): readonly AdministrativeDistrict[] {
+  const usableDistricts = districts.filter(hasUsableBirthplaceCoordinate)
+  if (usableDistricts.length === 0) return [...districts]
+
+  const longitude = roundCoordinate(
+    usableDistricts.reduce((sum, district) => sum + district.longitude!, 0) / usableDistricts.length,
+  )
+  const latitude = roundCoordinate(
+    usableDistricts.reduce((sum, district) => sum + district.latitude!, 0) / usableDistricts.length,
+  )
+
+  return districts.map((district) => {
+    if (hasUsableBirthplaceCoordinate(district)) return district
+    return {
+      ...district,
+      longitude,
+      latitude,
+      coordinate: {
+        sourceLabel: 'same-city reviewed coordinate fallback',
+        license: 'Derived from MIT administrative hierarchy and reviewed/manual coordinate records',
+        confidence: 'city-derived',
+        note: `City-level representative coordinate for ${cityName}; derived from ${usableDistricts.length} same-city usable district coordinate(s). Use for demo true-solar-time calculation only when district-level coordinate evidence is unavailable.`,
+      },
+    }
+  })
+}
+
+function roundCoordinate(value: number): number {
+  return Math.round(value * 100000) / 100000
 }
 
 function administrativeDistrictFromNode(node: ProvinceCityChinaLevelNode): AdministrativeDistrict {

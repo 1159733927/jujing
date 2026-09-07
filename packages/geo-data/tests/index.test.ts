@@ -71,8 +71,9 @@ describe('birthplace data', () => {
         administrativeDistrictCount: 3311,
         licensedCoordinateCount: 2612,
         manualFallbackCoordinateCount: 2,
-        selectableDistrictCount: 2614,
-        unavailableDistrictCount: 697,
+        cityFallbackCoordinateCount: 667,
+        selectableDistrictCount: 3281,
+        unavailableDistrictCount: 30,
       },
     })
     expect(ADMINISTRATIVE_BIRTHPLACE_TREE.length).toBeGreaterThanOrEqual(30)
@@ -80,8 +81,8 @@ describe('birthplace data', () => {
     expect(report.complete).toBe(true)
     expect(report.cityCount).toBeGreaterThan(300)
     expect(report.districtCount).toBeGreaterThan(3000)
-    expect(report.unavailableDistrictCount).toBe(697)
-    expect(report.selectableDistrictCount).toBe(2614)
+    expect(report.unavailableDistrictCount).toBe(30)
+    expect(report.selectableDistrictCount).toBe(3281)
   })
 
   it('finds province, city and district selections by administrative code', () => {
@@ -114,7 +115,7 @@ describe('birthplace data', () => {
     })
   })
 
-  it('searches administrative locations without pretending missing coordinates are usable', () => {
+  it('searches administrative locations with explicit city-level coordinate fallback when district evidence is missing', () => {
     const result = searchAdministrativeBirthplaces({ query: '密云', limit: 10 })
     expect(result.dataset.version).toBe(ADMINISTRATIVE_BIRTHPLACE_DATASET_METADATA.version)
     expect(result.total).toBeGreaterThan(0)
@@ -125,9 +126,9 @@ describe('birthplace data', () => {
         district: expect.objectContaining({
           code: '110118',
           name: '密云区',
-          coordinate: expect.objectContaining({ confidence: 'unavailable' }),
+          coordinate: expect.objectContaining({ confidence: 'city-derived' }),
         }),
-        selectable: false,
+        selectable: true,
       }),
     ]))
     expect(result.selectableDistrictCount + result.unavailableDistrictCount).toBe(result.total)
@@ -138,7 +139,8 @@ describe('birthplace data', () => {
   it('prioritizes GeoNames and only uses explicit manual-demo coordinates as fallback', () => {
     const selected = findAdministrativeBirthplaceByCode('330106')
     const fallback = findAdministrativeBirthplaceByCode('320508')
-    const unavailable = findAdministrativeBirthplaceByCode('110118')
+    const cityDerived = findAdministrativeBirthplaceByCode('110118')
+    const unavailable = findAdministrativeBirthplaceByCode('460321')
     expect(selected).toMatchObject({
       province: { name: '浙江省' },
       city: { name: '杭州市' },
@@ -149,12 +151,17 @@ describe('birthplace data', () => {
       district: { code: '320508', name: '姑苏区', coordinate: expect.objectContaining({ confidence: 'manual-demo' }) },
       selectable: true,
     })
+    expect(cityDerived).toMatchObject({
+      district: { code: '110118', coordinate: expect.objectContaining({ confidence: 'city-derived' }) },
+      selectable: true,
+    })
     expect(unavailable).toMatchObject({
-      district: { code: '110118', coordinate: expect.objectContaining({ confidence: 'unavailable' }) },
+      district: { code: '460321', coordinate: expect.objectContaining({ confidence: 'unavailable' }) },
       selectable: false,
     })
     expect(hasUsableBirthplaceCoordinate(selected!.district)).toBe(true)
     expect(hasUsableBirthplaceCoordinate(fallback!.district)).toBe(true)
+    expect(hasUsableBirthplaceCoordinate(cityDerived!.district)).toBe(true)
     expect(hasUsableBirthplaceCoordinate(unavailable!.district)).toBe(false)
   })
 
@@ -162,7 +169,7 @@ describe('birthplace data', () => {
     const report = validateBirthplaceDataset()
     expect(report.complete).toBe(true)
     expect(report.issues).toEqual([])
-    expect(report.districtCount).toBe(2614)
+    expect(report.districtCount).toBe(3281)
     expect(report.dataset.version).toBe(ADMINISTRATIVE_BIRTHPLACE_DATASET_METADATA.version)
   })
 
@@ -253,7 +260,7 @@ describe('birthplace data', () => {
 
   it('keeps the legacy demo tree explicitly separate from the main selectable product tree', () => {
     expect(BIRTHPLACE_TREE.flatMap((province) => province.cities.flatMap((city) => city.districts))).toHaveLength(29)
-    expect(SELECTABLE_BIRTHPLACE_TREE.flatMap((province) => province.cities.flatMap((city) => city.districts))).toHaveLength(2614)
+    expect(SELECTABLE_BIRTHPLACE_TREE.flatMap((province) => province.cities.flatMap((city) => city.districts))).toHaveLength(3281)
     expect(BIRTHPLACE_DATASET_METADATA.coverage).toBe('demo-sample')
   })
 })

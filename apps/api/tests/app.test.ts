@@ -1314,7 +1314,7 @@ describe('report API', () => {
         id: 'cn-administrative-geonames-reviewed-coordinates',
         coverage: 'licensed-partial',
         coordinateSystem: 'WGS84',
-        statistics: { selectableDistrictCount: 2614, unavailableDistrictCount: 697 },
+        statistics: { selectableDistrictCount: 3281, unavailableDistrictCount: 30 },
       },
     })
     expect(tree.statusCode).toBe(200)
@@ -1339,8 +1339,8 @@ describe('report API', () => {
     expect(integrity.json()).toMatchObject({
       complete: true,
       issues: [],
-      selectableDistrictCount: 2614,
-      unavailableDistrictCount: 697,
+      selectableDistrictCount: 3281,
+      unavailableDistrictCount: 30,
     })
     await app.close()
   })
@@ -1372,25 +1372,33 @@ describe('report API', () => {
     const dataset = await app.inject({ method: 'GET', url: '/v1/birthplaces/administrative/dataset' })
     const integrity = await app.inject({ method: 'GET', url: '/v1/birthplaces/administrative/integrity' })
     const selectable = await app.inject({ method: 'GET', url: '/v1/birthplaces/administrative/110101' })
-    const unavailable = await app.inject({ method: 'GET', url: '/v1/birthplaces/administrative/110118' })
+    const cityDerived = await app.inject({ method: 'GET', url: '/v1/birthplaces/administrative/110118' })
+    const unavailable = await app.inject({ method: 'GET', url: '/v1/birthplaces/administrative/460321' })
     const unknown = await app.inject({ method: 'GET', url: '/v1/birthplaces/administrative/999999' })
 
     expect(dataset.statusCode).toBe(200)
     expect(dataset.json()).toMatchObject({ dataset: {
       coverage: 'licensed-partial',
-      statistics: { selectableDistrictCount: 2614, unavailableDistrictCount: 697 },
+      statistics: { selectableDistrictCount: 3281, unavailableDistrictCount: 30 },
     } })
     expect(integrity.statusCode).toBe(200)
     expect(integrity.json()).toMatchObject({
       districtCount: 3311,
-      selectableDistrictCount: 2614,
-      unavailableDistrictCount: 697,
+      selectableDistrictCount: 3281,
+      unavailableDistrictCount: 30,
       complete: true,
     })
     expect(selectable.statusCode).toBe(200)
     expect(selectable.json()).toMatchObject({ birthplace: { selectable: true, district: { code: '110101', name: '东城区' } } })
+    expect(cityDerived.statusCode).toBe(200)
+    expect(cityDerived.json()).toMatchObject({
+      birthplace: {
+        selectable: true,
+        district: { code: '110118', name: '密云区', coordinate: { confidence: 'city-derived' } },
+      },
+    })
     expect(unavailable.statusCode).toBe(200)
-    expect(unavailable.json()).toMatchObject({ birthplace: { selectable: false, district: { code: '110118', name: '密云区' } } })
+    expect(unavailable.json()).toMatchObject({ birthplace: { selectable: false, district: { code: '460321', name: '西沙群岛' } } })
     expect(unknown.statusCode).toBe(404)
     await app.close()
   })
@@ -1419,6 +1427,17 @@ describe('report API', () => {
       timezone: 'Asia/Shanghai',
     })
     expect(spoofed.json().birth.geoDataVersion).not.toBe('forged-v1')
+
+    const cityDerived = await app.inject({ method: 'POST', url: '/v1/bazi', payload: {
+      date: '1992-08-18', time: '09:30', placeCode: '110118',
+    } })
+    expect(cityDerived.statusCode).toBe(200)
+    expect(cityDerived.json().birth).toMatchObject({
+      province: '北京市', city: '北京市', district: '密云区', placeCode: '110118',
+      locationName: '北京市 北京市 密云区', longitude: 116.38065, latitude: 40.00328,
+      timezone: 'Asia/Shanghai',
+    })
+    expect(cityDerived.json().birth.geoDataVersion).toMatch(/^province-city-china@/)
     await app.close()
   })
 
@@ -1438,9 +1457,9 @@ describe('report API', () => {
     await app.close()
   })
 
-  it('rejects unknown and unavailable place codes for calculation', async () => {
+  it('rejects unknown and places without an exact or city-level fallback coordinate for calculation', async () => {
     const app = await testApp()
-    for (const placeCode of ['999999', '110118']) {
+    for (const placeCode of ['999999', '460321']) {
       const response = await app.inject({ method: 'POST', url: '/v1/bazi', payload: {
         date: '1992-08-18', time: '09:30', placeCode,
       } })
@@ -4662,14 +4681,14 @@ describe('report API', () => {
     await app.close()
   })
 
-  it('rejects report birthplace codes without reviewed coordinates', async () => {
+  it('rejects report birthplace codes without exact or city-level fallback coordinates', async () => {
     const app = await testApp('不应生成')
     const response = await app.inject({
       method: 'POST',
       url: '/v1/reports',
       payload: {
         visionConsent: true,
-        birth: { date: '1992-08-21', time: '12:03', placeCode: '110118', useTrueSolarTime: true },
+        birth: { date: '1992-08-21', time: '12:03', placeCode: '460321', useTrueSolarTime: true },
         residence: { facing: 'south', layoutNote: '客厅连接阳台' },
         photos: [{ fileId: 'private-photo-id.jpg', room: 'living-room', facing: 'south' }],
       },

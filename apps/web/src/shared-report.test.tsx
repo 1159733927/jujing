@@ -42,6 +42,11 @@ function sharedReportFixture() {
 
 ## 依据说明
 资料标题，v1，来源：专家库`,
+    submission: {
+      visionConsent: true,
+      residence: { facing: 'south', layoutNote: '客厅连接南向阳台，厨房在南侧。' },
+      photos: [{ room: 'overview', facing: 'north', note: '全屋户型图，上北下南。' }],
+    },
     bazi: {
       pillars: ['甲子', '乙丑', '丙寅', '丁卯'],
       correctedLocalTime: '1992-03-04 08:00',
@@ -79,6 +84,15 @@ describe('shared report route', () => {
     expect(container.textContent).toContain('分享页可见的正式报告')
     expect(container.textContent).toContain('查看本报告使用的资料与规则')
     expect(container.textContent).toContain('报告依据摘要')
+    expect(container.textContent).toContain('本次分析对象')
+    expect(container.textContent).toContain('已绑定命盘')
+    expect(container.textContent).toContain('甲子 · 乙丑 · 丙寅 · 丁卯')
+    expect(container.textContent).toContain('住宅朝向：南')
+    expect(container.textContent).toContain('客厅连接南向阳台，厨房在南侧。')
+    expect(container.textContent).toContain('第 1 张 · 全屋/户型')
+    expect(container.textContent).toContain('镜头朝北')
+    expect(container.textContent).toContain('全屋户型图，上北下南。')
+    expect(container.textContent).toContain('识别到：客厅朝南且采光充足。')
     expect(container.textContent).toContain('只读分享')
     const metaLabels = Array.from(container.querySelectorAll('.report-detail-facts dt')).map((node) => node.textContent)
     expect(metaLabels.filter((label) => label === '命盘')).toHaveLength(1)

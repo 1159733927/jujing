@@ -317,7 +317,7 @@ type Report = {
   createdAt?: string
   report?: string
   error?: string
-  submission?: { calculationInput: ChartCalculationInput; birth?: BirthInput }
+  submission?: ReportSubmissionSnapshot
   chartProfileId?: string
   chartVersionId?: string
   residenceProfileId?: string
@@ -856,6 +856,19 @@ export function buildReportChartBinding(
 type ReportResidenceInput = { facing: FormDataEntryValue | null; layoutNote: FormDataEntryValue | null }
 type SelectedReportResidence = { profile: ResidenceProfile; snapshot: ResidenceSnapshot }
 type UploadedReportPhoto = { fileId: string; room: Room; facing: Direction; note: string }
+type ReportSubmissionPhoto = { room?: string; facing?: string; note?: string; fileId?: string }
+type ReportSubmissionSnapshot = {
+  visionConsent?: boolean
+  ruleProfileVersionId?: string
+  chartProfileId?: string
+  chartVersionId?: string
+  residenceProfileId?: string
+  residenceVersionId?: string
+  calculationInput?: ChartCalculationInput
+  birth?: BirthInput
+  residence?: { facing?: string | null; layoutNote?: string | null }
+  photos?: readonly ReportSubmissionPhoto[]
+}
 
 export function normalizeResidenceProfilesResponse(payload: unknown): ResidenceProfile[] {
   const profiles = payload && typeof payload === 'object' && Array.isArray((payload as { profiles?: unknown }).profiles)
@@ -1315,6 +1328,12 @@ const roomLabels: Record<Room, string> = {
 
 function formatRoomLabel(room: string): string {
   return Object.prototype.hasOwnProperty.call(roomLabels, room) ? roomLabels[room as Room] : room
+}
+
+function formatDirectionLabel(direction?: string | null): string {
+  return direction && Object.prototype.hasOwnProperty.call(directionLabels, direction)
+    ? directionLabels[direction as Direction]
+    : '不确定'
 }
 
 function formatFiveElements(value: NonNullable<BaziChart['fiveElements']>): string {
@@ -2841,6 +2860,77 @@ function ReportEvidenceSummary({ report }: { report: ReportEvidenceInput }) {
   </details>
 }
 
+function shortReference(id?: string): string {
+  if (!id?.trim()) return '未记录'
+  const lastPart = id.split(':').filter(Boolean).at(-1) ?? id
+  return lastPart.slice(0, 8)
+}
+
+function reportPhotoRows(report: Pick<Report, 'submission' | 'vision'>) {
+  const photos = report.submission?.photos ?? []
+  const observations = report.vision ?? []
+  return photos.map((photo, index) => {
+    const observation = observations[index] ?? observations.find((item) => item.room === photo.room)
+    return {
+      key: `${photo.room ?? 'photo'}-${index}`,
+      title: `第 ${index + 1} 张 · ${formatRoomLabel(photo.room ?? 'other')}`,
+      facing: `镜头朝${formatDirectionLabel(photo.facing)}`,
+      note: photo.note?.trim() || '未填写照片说明',
+      observation: observation?.summary?.trim() || '',
+    }
+  })
+}
+
+function ReportSourceSummary({
+  report,
+  member,
+  residence,
+}: {
+  report: Pick<Report, 'id' | 'createdAt' | 'submission' | 'bazi' | 'vision' | 'chartVersionId' | 'residenceVersionId'>
+  member?: MemberChartProfile
+  residence?: ResidenceProfile
+}) {
+  const residenceSnapshot = residence?.currentVersion.snapshot
+  const residenceFacing = report.submission?.residence?.facing ?? residenceSnapshot?.facing ?? 'unknown'
+  const residenceNote = report.submission?.residence?.layoutNote?.trim() || residenceSnapshot?.layoutNote?.trim() || '未填写住宅格局说明'
+  const photoRows = reportPhotoRows(report)
+  return <section className="report-source-summary" aria-label="本次分析对象">
+    <div className="section-head sub-section-head">
+      <div><p className="kicker">ANALYSIS TARGET</p><h3>本次分析对象</h3></div>
+      <span>报告用料</span>
+    </div>
+    <div className="report-source-grid">
+      <div>
+        <small>谁的命盘</small>
+        <strong>{member ? memberLabel(member) : '已绑定命盘'}</strong>
+        <span>{report.bazi.pillars?.filter(Boolean).join(' · ') || '四柱未记录'}</span>
+        <em>命盘版本：{shortReference(report.chartVersionId)}</em>
+      </div>
+      <div>
+        <small>哪套住宅</small>
+        <strong>{residenceSnapshot?.label ?? '本次住宅'}</strong>
+        <span>住宅朝向：{formatDirectionLabel(residenceFacing)}</span>
+        <em>住宅版本：{shortReference(report.residenceVersionId)}</em>
+      </div>
+      <div>
+        <small>生成时间</small>
+        <strong>{formatDateTimeLabel(report.createdAt)}</strong>
+        <span>照片：{photoRows.length || report.vision?.length || 0} 张/条</span>
+        <em>报告编号：{shortReference(report.id)}</em>
+      </div>
+    </div>
+    <p className="report-source-note"><b>住宅描述：</b>{residenceNote}</p>
+    {photoRows.length ? <div className="report-photo-sources" aria-label="本次分析照片">
+      {photoRows.map((photo) => <article key={photo.key}>
+        <b>{photo.title}</b>
+        <span>{photo.facing}</span>
+        <p>{photo.note}</p>
+        {photo.observation && <small>识别到：{photo.observation}</small>}
+      </article>)}
+    </div> : <p className="report-source-note">本报告没有保留可展示的照片标注；只能查看模型输出和视觉观察摘要。</p>}
+  </section>
+}
+
 function sleep(ms: number, signal: AbortSignal) {
   return new Promise<void>((resolve, reject) => {
     const onAbort = () => {
@@ -3106,6 +3196,12 @@ function ReportsPage({
   const selectedReportId = selectedReport?.id ?? ''
   const selectedMember = members?.find((profile) => profile.id === selectedMemberId)
   const selectedResidence = residences?.find((profile) => profile.id === selectedReportResidenceId)
+  const selectedReportMember = selectedReport?.chartProfileId
+    ? members?.find((profile) => profile.id === selectedReport.chartProfileId)
+    : undefined
+  const selectedReportResidence = selectedReport?.residenceProfileId
+    ? residences?.find((profile) => profile.id === selectedReport.residenceProfileId)
+    : undefined
   const scopeTitle = reportScope === 'archived'
     ? '回收站里的报告'
     : reportScope === 'all'
@@ -3185,6 +3281,7 @@ function ReportsPage({
           <p>旧报告使用了早期格式，正文可能包含内部字段或调试信息，因此已停止展示。请回到“住宅分析”用当前命盘和住宅资料重新生成。</p>
         </article>}
         {!detailLoading && activeReport && <>
+          <ReportSourceSummary report={activeReport} member={selectedReportMember} residence={selectedReportResidence} />
           <ReportMarkdown report={activeReport.report ?? ''} />
           <ReportEvidenceSummary report={activeReport} />
           <details className="provenance report-meta-disclosure">
@@ -3312,6 +3409,7 @@ function SharedReportPage() {
         </div>
       </div>
       {pdfError && <p className="inline-error" role="alert">{pdfError}</p>}
+      <ReportSourceSummary report={sharedReport} />
       <ReportMarkdown report={sharedReport.report ?? ''} />
       <ReportEvidenceSummary report={sharedReport} />
       <details className="provenance report-meta-disclosure">
@@ -3413,6 +3511,7 @@ export function App() {
   const printableBirthReport = printableReport && isBirthDataBaziChart(printableReport.bazi)
     ? { ...printableReport, bazi: printableReport.bazi }
     : null
+  const selectedMemberProfile = memberProfiles.find((profile) => profile.id === selectedMemberId)
   const selectedResidenceProfile = useMemo(
     () => residenceProfiles.find((profile) => profile.id === selectedResidenceProfileId) ?? null,
     [residenceProfiles, selectedResidenceProfileId],
@@ -4319,6 +4418,7 @@ export function App() {
             {printableBirthReport && <button type="button" onClick={() => downloadReportPdf(printableBirthReport.id)}>下载 PDF</button>}
           </div>
         </div>
+        <ReportSourceSummary report={printableReport} member={selectedMemberProfile} residence={selectedResidenceProfile ?? undefined} />
         <ReportMarkdown report={printableReport.report ?? ''} />
         <ReportEvidenceSummary report={printableReport} />
         <div className="report-history-cta">

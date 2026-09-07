@@ -279,6 +279,22 @@ code{font-family:"SF Mono",ui-monospace,monospace;background:#f1eadf;border:1px 
 .evidence-summary-grid em{font-style:normal;font-size:11px;line-height:1.4;color:#6a746d;word-break:break-word}
 .evidence-summary ul{margin:0;padding-left:18px;color:#4f6057;line-height:1.7;font-size:13px}
 .evidence-summary p{margin:0;color:#6b766f;line-height:1.65;font-size:13px}
+.report-source-summary{margin:4px 0 24px;border:1px solid #d8c8ad;background:linear-gradient(135deg,#fffdf8,#f5f1e8);border-radius:16px;padding:18px;display:grid;gap:14px}
+.report-source-summary .section-head{margin:0}
+.report-source-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.report-source-grid>div{display:grid;gap:6px;border:1px solid #e4d8c5;background:#fffaf3;border-radius:13px;padding:13px;min-width:0}
+.report-source-grid small{color:#7b7368;font-size:11px;font-weight:900;letter-spacing:.08em}
+.report-source-grid strong{color:#1f3d32;font-size:17px;line-height:1.35}
+.report-source-grid span{color:#40564b;font-size:13px;line-height:1.45;word-break:break-word}
+.report-source-grid em{font-style:normal;color:#7a6e5e;font-size:11px;word-break:break-word}
+.report-source-note{margin:0;color:#4c5d55;font-size:13px;line-height:1.7}
+.report-source-note b{color:#29483b}
+.report-photo-sources{display:grid;gap:10px}
+.report-photo-sources article{display:grid;grid-template-columns:minmax(128px,.6fr) minmax(88px,.35fr) minmax(0,1fr);gap:8px 12px;align-items:start;border:1px solid #dbe5d9;background:#f8fbf5;border-radius:13px;padding:12px}
+.report-photo-sources b{color:#244738;font-size:13px}
+.report-photo-sources span{color:#765d37;font-size:12px;font-weight:900}
+.report-photo-sources p{margin:0;color:#45594f;font-size:13px;line-height:1.55}
+.report-photo-sources small{grid-column:1/-1;color:#65756d;font-size:12px;line-height:1.55}
 .provenance{border-top:1px solid var(--line);margin-top:24px;padding-top:18px}
 .provenance summary{cursor:pointer;font-weight:800;color:#254d3e;min-height:44px}
 .source-group{display:grid;gap:8px;margin-top:14px}
@@ -620,7 +636,8 @@ code{font-family:"SF Mono",ui-monospace,monospace;background:#f1eadf;border:1px 
   .hero p:last-child{font-size:15px}
   .steps{display:flex;overflow:auto}
   .steps span{min-width:136px}
-  .fields,.summary-grid,.flow-query,.flow-target-summary,.compact-summary,.advanced-chart-param-grid,.compatibility-preview,.compatibility-summary-grid,.report-detail-facts{grid-template-columns:1fr}
+  .fields,.summary-grid,.flow-query,.flow-target-summary,.compact-summary,.advanced-chart-param-grid,.compatibility-preview,.compatibility-summary-grid,.report-detail-facts,.report-source-grid{grid-template-columns:1fr}
+  .report-photo-sources article{grid-template-columns:1fr}
   .report-verdict-summary dl>div{grid-template-columns:1fr;gap:6px}
   .report-lead-conclusion p{font-size:18px}
   .report-action-list{grid-template-columns:1fr}

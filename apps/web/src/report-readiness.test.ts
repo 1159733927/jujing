@@ -371,7 +371,11 @@ describe('report readiness UI', () => {
         status: 'completed',
         phase: 'completed',
         createdAt: '2026-09-01T12:00:00.000Z',
-        submission: { visionConsent: true, residence: { facing: 'south' }, photos: [] },
+        submission: {
+          visionConsent: true,
+          residence: { facing: 'south', layoutNote: '客厅连接南向阳台，厨房在南侧。' },
+          photos: [{ room: 'overview', facing: 'north', note: '全屋户型图，上北下南。' }],
+        },
         bazi: {
           pillars: ['壬申', '戊申', '丙寅', '癸巳'],
           correctedLocalTime: '1992-08-18T09:27',
@@ -415,6 +419,13 @@ describe('report readiness UI', () => {
     expect(container.textContent).toContain('模型校验')
     expect(container.textContent).toContain('下载 PDF')
     expect(container.textContent).toContain('新建分析')
+    expect(container.textContent).toContain('本次分析对象')
+    expect(container.textContent).toContain('住宅朝向：南')
+    expect(container.textContent).toContain('客厅连接南向阳台，厨房在南侧。')
+    expect(container.textContent).toContain('第 1 张 · 全屋/户型')
+    expect(container.textContent).toContain('镜头朝北')
+    expect(container.textContent).toContain('全屋户型图，上北下南。')
+    expect(container.textContent).toContain('识别到：客厅朝南，采光较好。')
     expect(container.textContent).toContain('查看本报告使用的资料与规则')
     expect(container.textContent).toContain('报告依据摘要')
     expect(container.textContent).toContain('命盘依据')

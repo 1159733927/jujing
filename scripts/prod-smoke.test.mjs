@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { describe, it } from 'node:test'
 import { prodSmokeTargets, runProdSmoke } from './prod-smoke.mjs'
 
@@ -97,5 +98,17 @@ describe('production smoke verifier', () => {
       }),
       /expected 密云区 coordinate confidence city-derived/,
     )
+  })
+
+  it('keeps the Tencent VM reverse proxy aligned with documented local Compose ports', () => {
+    const nginx = readFileSync('infra/nginx/tencent-vm.conf', 'utf8')
+    const deployment = readFileSync('docs/deployment.md', 'utf8')
+
+    assert.match(nginx, /location \/admin\//)
+    assert.match(nginx, /proxy_pass http:\/\/127\.0\.0\.1:18082;/)
+    assert.match(nginx, /proxy_pass http:\/\/127\.0\.0\.1:18081;/)
+    assert.match(deployment, /APP_PORT=18081/)
+    assert.match(deployment, /ADMIN_PORT=18082/)
+    assert.match(deployment, /http:\/\/<server-ip>\/admin\//)
   })
 })

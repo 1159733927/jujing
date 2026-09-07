@@ -97,6 +97,38 @@ Open:
 - API liveness through proxy: `http://127.0.0.1:${APP_PORT:-8080}/api/health`
 - API readiness through proxy: `http://127.0.0.1:${APP_PORT:-8080}/api/ready`
 
+## Tencent Cloud single-IP reverse proxy
+
+For the current Tencent Cloud VM, use Docker Compose as the private application
+runtime and let the host nginx expose one public origin:
+
+- Consumer site: `http://<server-ip>/`
+- Admin console: `http://<server-ip>/admin/`
+- API through the consumer proxy: `http://<server-ip>/api/health`
+
+Use these `.env` port settings before `docker compose up -d`:
+
+```sh
+APP_BIND_HOST=127.0.0.1
+APP_PORT=18081
+ADMIN_BIND_HOST=127.0.0.1
+ADMIN_PORT=18082
+```
+
+Then install the checked-in host nginx reverse proxy:
+
+```sh
+sudo cp infra/nginx/tencent-vm.conf /etc/nginx/conf.d/fengshui.conf
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+The checked-in `infra/nginx/tencent-vm.conf` proxies `/` to
+`127.0.0.1:18081` and `/admin/` to `127.0.0.1:18082`. If those Compose ports
+do not match, `/admin/` will look like the site is down even if the containers
+are healthy. For HTTPS, put the TLS certificate on the host nginx layer; do not
+expose the internal Compose admin port directly to the public internet.
+
 ## Health
 
 ```sh

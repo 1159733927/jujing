@@ -201,6 +201,8 @@ async function testApp(report = '测试报告', options: {
     options.chartPdfRenderer,
     options.reportPdfRenderer,
     new ResidenceRepository(join(directory, 'residences.json')),
+    undefined,
+    { requireUserAuthentication: false },
   )
 }
 

@@ -29,6 +29,7 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: ${NODE_ENV:-production}
+      REQUIRE_USER_AUTH: ${REQUIRE_USER_AUTH:-true}
       HOST: ${HOST:-0.0.0.0}
       PORT: ${PORT:-3001}
       STORAGE_DRIVER: ${STORAGE_DRIVER:-postgres}

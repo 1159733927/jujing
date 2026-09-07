@@ -82,6 +82,7 @@ export function prepareDemoEnvironment(baseEnv = process.env, randomBytesFn = ra
       ADMIN_USERNAME: adminUsername,
       ADMIN_PASSWORD: adminPassword,
       ADMIN_ACTOR_ID: baseEnv.ADMIN_ACTOR_ID?.trim() || 'local-demo-editor',
+      REQUIRE_USER_AUTH: baseEnv.REQUIRE_USER_AUTH?.trim() || 'true',
       SEED_PROFESSIONAL_KNOWLEDGE: baseEnv.SEED_PROFESSIONAL_KNOWLEDGE?.trim() || 'true',
     },
   }

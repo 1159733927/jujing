@@ -291,6 +291,7 @@ export function buildApp(
   reportPdfRenderer: ReportPdfRenderer = productionReportPdfRenderer,
   residences: ResidenceStore = new ResidenceRepository(fileURLToPath(new URL('../../../.data/residences.json', import.meta.url))),
   accounts: AccountStore = new FileAccountStore(fileURLToPath(new URL('../../../.data/accounts.json', import.meta.url))),
+  options: { requireUserAuthentication?: boolean } = {},
 ) {
   const app = Fastify()
   // Production uses two independent Harness roles. Tests and local injected
@@ -360,6 +361,10 @@ export function buildApp(
   const reportCitationLimit = 8
   const activeReports = new Map<string, Promise<void>>()
   const adminToken = process.env.ADMIN_API_TOKEN
+  const requireUserAuthentication = options.requireUserAuthentication
+    ?? (process.env.REQUIRE_USER_AUTH === undefined
+      ? process.env.NODE_ENV !== 'test'
+      : process.env.REQUIRE_USER_AUTH !== 'false')
   const adminActor = process.env.ADMIN_ACTOR_ID ?? 'local-admin'
   const adminReviewerActor = process.env.ADMIN_REVIEWER_ACTOR_ID ?? `${adminActor}:reviewer`
   const knowledgeReaderToken = process.env.KNOWLEDGE_MCP_TOKEN
@@ -663,12 +668,14 @@ export function buildApp(
     if (authenticated?.user.principalId) {
       return { id: authenticated.user.principalId, kind: 'anonymous' as const, tokenHash: '', createdAt: authenticated.user.createdAt }
     }
+    if (requireUserAuthentication) return undefined
     const token = cookieValue(cookieHeader, principalCookieName)
     return token ? charts.findPrincipalByTokenHash(tokenHash(token)) : undefined
   }
   async function ensureAnonymousPrincipal(cookieHeader: string | undefined, reply: { header(name: string, value: string): unknown }) {
     const existing = await principalFromCookie(cookieHeader)
     if (existing) return existing
+    if (requireUserAuthentication) return undefined
     const token = randomBytes(32).toString('base64url')
     const principal = { id: crypto.randomUUID(), kind: 'anonymous' as const, tokenHash: tokenHash(token), createdAt: new Date().toISOString() }
     await charts.createPrincipal(principal)
@@ -1708,15 +1715,23 @@ export function buildApp(
       return reply.code(400).send({ error: (error as Error).message })
     }
   })
-  app.get('/v1/charts/current', async (request) => {
+  app.get('/v1/charts/current', async (request, reply) => {
     const principal = await principalFromCookie(request.headers.cookie)
-    return { profile: principal ? (await charts.getCurrentProfile(principal.id) ?? null) : null }
+    if (!principal) return requireUserAuthentication
+      ? reply.code(401).send({ error: 'authentication required' })
+      : { profile: null }
+    return { profile: await charts.getCurrentProfile(principal.id) ?? null }
   })
-  app.get('/v1/charts', async (request) => {
+  app.get('/v1/charts', async (request, reply) => {
     const principal = await principalFromCookie(request.headers.cookie)
-    return { profiles: principal ? await charts.listProfiles(principal.id) : [] }
+    if (!principal) return requireUserAuthentication
+      ? reply.code(401).send({ error: 'authentication required' })
+      : { profiles: [] }
+    return { profiles: await charts.listProfiles(principal.id) }
   })
   app.post<{ Body: ChartCreationRequest }>('/v1/charts', async (request, reply) => {
+    const principal = await ensureAnonymousPrincipal(request.headers.cookie, reply)
+    if (!principal) return reply.code(401).send({ error: 'authentication required' })
     let calculated
     let metadata
     try {
@@ -1724,7 +1739,6 @@ export function buildApp(
       metadata = parseChartProfileMetadata({ label, relationship })
       calculated = await calculateRequest(input, ruleProfileVersionId, true)
     } catch (error) { return reply.code(400).send({ error: (error as Error).message }) }
-    const principal = await ensureAnonymousPrincipal(request.headers.cookie, reply)
     try {
       return reply.code(201).send({ profile: await charts.createProfile(
         principal.id,
@@ -1882,18 +1896,22 @@ export function buildApp(
       throw error
     }
   })
-  app.get('/v1/residences', async (request) => {
+  app.get('/v1/residences', async (request, reply) => {
     const principal = await principalFromCookie(request.headers.cookie)
-    return { profiles: principal ? await residences.listProfiles(principal.id) : [] }
+    if (!principal) return requireUserAuthentication
+      ? reply.code(401).send({ error: 'authentication required' })
+      : { profiles: [] }
+    return { profiles: await residences.listProfiles(principal.id) }
   })
   app.post<{ Body: ResidenceSnapshotRequest }>('/v1/residences', async (request, reply) => {
+    const principal = await ensureAnonymousPrincipal(request.headers.cookie, reply)
+    if (!principal) return reply.code(401).send({ error: 'authentication required' })
     let snapshot
     try {
       snapshot = parseResidenceSnapshot(request.body)
     } catch (error) {
       return reply.code(400).send({ error: (error as Error).message })
     }
-    const principal = await ensureAnonymousPrincipal(request.headers.cookie, reply)
     return reply.code(201).send({ profile: await residences.createProfile(principal.id, snapshot) })
   })
   app.post<{ Params: { id: string }; Body: ResidenceSnapshotRequest }>('/v1/residences/:id/versions', async (request, reply) => {
@@ -2281,9 +2299,10 @@ export function buildApp(
     }
   })
   app.post('/v1/media', async (request, reply) => {
+    const principal = await ensureAnonymousPrincipal(request.headers.cookie, reply)
+    if (!principal) return reply.code(401).send({ error: 'authentication required' })
     if (request.headers['x-vision-consent'] !== 'accepted') return reply.code(400).send({ error: 'explicit vision consent is required before upload' })
     try {
-      const principal = await ensureAnonymousPrincipal(request.headers.cookie, reply)
       const image = await request.file()
       if (!image) return reply.code(400).send({ error: 'image is required' })
       const bytes = await image.toBuffer()
@@ -2295,7 +2314,9 @@ export function buildApp(
   })
   app.get<{ Querystring: { archived?: string; chartProfileId?: string; residenceProfileId?: string } }>('/v1/reports', async (request, reply) => {
     const principal = await principalFromCookie(request.headers.cookie)
-    if (!principal) return { reports: [] }
+    if (!principal) return requireUserAuthentication
+      ? reply.code(401).send({ error: 'authentication required' })
+      : { reports: [] }
     try {
       const reports = await repository.listByPrincipal(principal.id, request.query.archived === 'true')
       return {
@@ -2311,14 +2332,14 @@ export function buildApp(
   })
   app.get<{ Params: { id: string } }>('/v1/reports/:id', async (request, reply) => {
     const principal = await principalFromCookie(request.headers.cookie)
-    if (!principal) return reply.code(404).send({ error: 'report not found' })
+    if (!principal) return reply.code(requireUserAuthentication ? 401 : 404).send({ error: requireUserAuthentication ? 'authentication required' : 'report not found' })
     const record = await repository.getOwned(request.params.id, principal.id)
     if (!record) return reply.code(404).send({ error: 'report not found' })
     return publicReportRecord(record)
   })
   app.get<{ Params: { id: string } }>('/v1/reports/:id/pdf', async (request, reply) => {
     const principal = await principalFromCookie(request.headers.cookie)
-    if (!principal) return reply.code(404).send({ error: 'report not found' })
+    if (!principal) return reply.code(requireUserAuthentication ? 401 : 404).send({ error: requireUserAuthentication ? 'authentication required' : 'report not found' })
     const record = await repository.getOwned(request.params.id, principal.id)
     if (!record) return reply.code(404).send({ error: 'report not found' })
     if (record.archivedAt || record.status !== 'completed' || !record.report?.trim() || !hasCurrentValidatorApproval(record)) {
@@ -2366,7 +2387,7 @@ export function buildApp(
   })
   app.post<{ Params: { id: string } }>('/v1/reports/:id/share', async (request, reply) => {
     const principal = await principalFromCookie(request.headers.cookie)
-    if (!principal) return reply.code(404).send({ error: 'report not found' })
+    if (!principal) return reply.code(requireUserAuthentication ? 401 : 404).send({ error: requireUserAuthentication ? 'authentication required' : 'report not found' })
     const record = await repository.getOwned(request.params.id, principal.id)
     if (!record) return reply.code(404).send({ error: 'report not found' })
     if (!reportCanBeShared(record)) return reply.code(409).send({ error: 'report is not ready to share' })
@@ -2379,7 +2400,7 @@ export function buildApp(
   })
   app.delete<{ Params: { id: string } }>('/v1/reports/:id/share', async (request, reply) => {
     const principal = await principalFromCookie(request.headers.cookie)
-    if (!principal) return reply.code(404).send({ error: 'report not found' })
+    if (!principal) return reply.code(requireUserAuthentication ? 401 : 404).send({ error: requireUserAuthentication ? 'authentication required' : 'report not found' })
     const record = await repository.getOwned(request.params.id, principal.id)
     if (!record) return reply.code(404).send({ error: 'report not found' })
     if (record.shareAccess) {
@@ -2390,7 +2411,7 @@ export function buildApp(
   })
   app.delete<{ Params: { id: string } }>('/v1/reports/:id', async (request, reply) => {
     const principal = await principalFromCookie(request.headers.cookie)
-    if (!principal) return reply.code(404).send({ error: 'report not found' })
+    if (!principal) return reply.code(requireUserAuthentication ? 401 : 404).send({ error: requireUserAuthentication ? 'authentication required' : 'report not found' })
     try {
       const archived = await repository.archiveOwned(request.params.id, principal.id, new Date().toISOString())
       return archived
@@ -2403,7 +2424,7 @@ export function buildApp(
   })
   app.post<{ Params: { id: string } }>('/v1/reports/:id/restore', async (request, reply) => {
     const principal = await principalFromCookie(request.headers.cookie)
-    if (!principal) return reply.code(404).send({ error: 'report not found' })
+    if (!principal) return reply.code(requireUserAuthentication ? 401 : 404).send({ error: requireUserAuthentication ? 'authentication required' : 'report not found' })
     try {
       const restored = await repository.restoreOwned(request.params.id, principal.id)
       return restored
@@ -2416,7 +2437,7 @@ export function buildApp(
   })
   app.post<{ Params: { id: string } }>('/v1/reports/:id/regenerate', async (request, reply) => {
     const principal = await principalFromCookie(request.headers.cookie)
-    if (!principal) return reply.code(404).send({ error: 'report not found' })
+    if (!principal) return reply.code(requireUserAuthentication ? 401 : 404).send({ error: requireUserAuthentication ? 'authentication required' : 'report not found' })
     const source = await repository.getOwned(request.params.id, principal.id)
     if (!source) return reply.code(404).send({ error: 'report not found' })
     if (source.status !== 'completed'
@@ -2503,6 +2524,8 @@ export function buildApp(
     return reply.header('Cache-Control', 'private, no-store').send(publicReportRecord(record))
   })
   app.post<{ Body: ReportSubmissionRequest }>('/v1/reports', async (request, reply) => {
+    const principal = await ensureAnonymousPrincipal(request.headers.cookie, reply)
+    if (!principal) return reply.code(401).send({ error: 'authentication required' })
     if (request.body?.visionConsent !== true) return reply.code(400).send({ error: 'explicit vision consent is required' })
     if (!request.body.residence || !directions.has(request.body.residence.facing) || !request.body.photos?.length || request.body.photos.length > 12 || request.body.photos.some((photo) => typeof photo.fileId !== 'string' || !rooms.has(photo.room) || !directions.has(photo.facing))) return reply.code(400).send({ error: 'valid chart input, residence and 1-12 photos are required' })
     const floorPlanError = validateReportFloorPlan(request.body.floorPlan)
@@ -2517,8 +2540,6 @@ export function buildApp(
     const reportId = crypto.randomUUID()
     if (request.body.chartProfileId) {
       if (!request.body.chartVersionId) return reply.code(400).send({ error: 'chartVersionId is required with chartProfileId' })
-      const principal = await principalFromCookie(request.headers.cookie)
-      if (!principal) return reply.code(401).send({ error: 'chart access required' })
       const profile = await charts.getProfile(request.body.chartProfileId, principal.id)
       if (!profile) return reply.code(404).send({ error: 'chart not found' })
       if (profile.currentVersion.id !== request.body.chartVersionId) return reply.code(409).send({ error: 'chart was updated elsewhere; reload before creating the report', profile })
@@ -2558,7 +2579,6 @@ export function buildApp(
         calculated.ruleProfileVersion?.versionId,
       )
       bazi = calculated.bazi
-      const principal = await ensureAnonymousPrincipal(request.headers.cookie, reply)
       reportPrincipalId = principal.id
       const current = await charts.getCurrentProfile(principal.id)
       try {

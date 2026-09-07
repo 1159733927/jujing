@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it } from 'vitest'
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -12,9 +13,11 @@ import { BaziRuleProfileRepository } from '../src/rule-profiles.js'
 import { ResidenceRepository } from '../src/residences.js'
 
 const previousAdminToken = process.env.ADMIN_API_TOKEN
-afterEach(() => { if (previousAdminToken === undefined) delete process.env.ADMIN_API_TOKEN; else process.env.ADMIN_API_TOKEN = previousAdminToken })
+afterEach(() => {
+  if (previousAdminToken === undefined) delete process.env.ADMIN_API_TOKEN; else process.env.ADMIN_API_TOKEN = previousAdminToken
+})
 
-async function authApp() {
+async function authApp(requireUserAuth = false) {
   const directory = await mkdtemp(join(tmpdir(), 'fengshui-auth-'))
   process.env.ADMIN_API_TOKEN = 'test-admin-token'
   return buildApp(
@@ -34,8 +37,22 @@ async function authApp() {
     undefined,
     new ResidenceRepository(join(directory, 'residences.json')),
     new FileAccountStore(join(directory, 'accounts.json')),
+    { requireUserAuthentication: requireUserAuth },
   )
 }
+
+const persistableBirth = () => ({ date: '1992-08-18', time: '09:30', placeCode: '330106' })
+const reportPayload = () => ({
+  visionConsent: true,
+  birth: persistableBirth(),
+  residence: { facing: 'south' as const, layoutNote: '客厅连接阳台' },
+  photos: [{ fileId: `${randomUUID()}.png`, room: 'living-room' as const, facing: 'south' as const }],
+})
+const pngUploadPayload = (boundary: string) => Buffer.concat([
+  Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="image"; filename="room.png"\r\nContent-Type: image/png\r\n\r\n`),
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]),
+  Buffer.from(`\r\n--${boundary}--\r\n`),
+])
 
 describe('admin-issued user accounts', () => {
   it('has no public registration endpoint and supports create, login, session and logout', async () => {
@@ -83,6 +100,84 @@ describe('admin-issued user accounts', () => {
     expect((await app.inject({ method: 'GET', url: '/v1/auth/session', headers: { cookie } })).statusCode).toBe(401)
     expect((await app.inject({ method: 'POST', url: '/v1/auth/login', payload: { username: 'carol', password: 'old-password' } })).statusCode).toBe(401)
     expect((await app.inject({ method: 'POST', url: '/v1/auth/login', payload: { username: 'carol', password: 'new-password' } })).statusCode).toBe(200)
+    await app.close()
+  })
+})
+
+describe('private account authorization', () => {
+  it('rejects chart creation when no user session is present', async () => {
+    const app = await authApp(true)
+    const response = await app.inject({ method: 'POST', url: '/v1/charts', payload: persistableBirth() })
+    expect(response.statusCode).toBe(401)
+    await app.close()
+  })
+
+  it('rejects residence creation when no user session is present', async () => {
+    const app = await authApp(true)
+    const response = await app.inject({ method: 'POST', url: '/v1/residences', payload: { label: '自住房', facing: 'south' } })
+    expect(response.statusCode).toBe(401)
+    await app.close()
+  })
+
+  it('rejects media upload when no user session is present', async () => {
+    const app = await authApp(true)
+    const boundary = 'fengshui-auth-boundary'
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/media',
+      headers: { 'content-type': `multipart/form-data; boundary=${boundary}`, 'x-vision-consent': 'accepted' },
+      payload: pngUploadPayload(boundary),
+    })
+    expect(response.statusCode).toBe(401)
+    await app.close()
+  })
+
+  it('rejects report creation when no user session is present', async () => {
+    const app = await authApp(true)
+    const response = await app.inject({ method: 'POST', url: '/v1/reports', payload: reportPayload() })
+    expect(response.statusCode).toBe(401)
+    await app.close()
+  })
+
+  it('rejects private chart list reads when no user session is present', async () => {
+    const app = await authApp(true)
+    const response = await app.inject({ method: 'GET', url: '/v1/charts' })
+    expect(response.statusCode).toBe(401)
+    await app.close()
+  })
+
+  it('rejects private residence list reads when no user session is present', async () => {
+    const app = await authApp(true)
+    const response = await app.inject({ method: 'GET', url: '/v1/residences' })
+    expect(response.statusCode).toBe(401)
+    await app.close()
+  })
+
+  it('rejects private report list reads when no user session is present', async () => {
+    const app = await authApp(true)
+    const response = await app.inject({ method: 'GET', url: '/v1/reports' })
+    expect(response.statusCode).toBe(401)
+    await app.close()
+  })
+
+  it('rejects private chart detail reads when no user session is present', async () => {
+    const app = await authApp(true)
+    const response = await app.inject({ method: 'GET', url: `/v1/charts/${randomUUID()}/versions` })
+    expect(response.statusCode).toBe(401)
+    await app.close()
+  })
+
+  it('rejects private residence detail reads when no user session is present', async () => {
+    const app = await authApp(true)
+    const response = await app.inject({ method: 'GET', url: `/v1/residences/${randomUUID()}/versions` })
+    expect(response.statusCode).toBe(401)
+    await app.close()
+  })
+
+  it('rejects private report detail reads when no user session is present', async () => {
+    const app = await authApp(true)
+    const response = await app.inject({ method: 'GET', url: `/v1/reports/${randomUUID()}` })
+    expect(response.statusCode).toBe(401)
     await app.close()
   })
 })

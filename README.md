@@ -77,13 +77,13 @@ PDF_IMPORT_PYTHON=/path/to/python-with-pdfplumber pnpm --filter @fengshui/api kn
 
 用户端当前采用 admin 下发账号登录，不提供公开注册。知识资料的完整列表、创建、修订、提交审核、发布和归档要求管理员会话或 `Authorization: Bearer <ADMIN_API_TOKEN>`。知识修订携带 `expectedRevision`，文件模式用写队列原子校验，PostgreSQL 模式在行锁内校验；过期编辑返回冲突，已经发布的版本和内容哈希不被覆盖。发布版本会记录提交、审核和发布的 actor 与时间，用于兼容既有审计结构；当前 Demo 不再要求单独的浏览器审核令牌。报告生成前，API 使用服务端内部令牌检索已发布专家资料，并把筛选后的 citations 固化到报告记录；模型不会获得知识 MCP、文件、网页或额外检索工具。配置知识 API 地址但缺少内部 token 时，检索会在进入 Harness 前失败关闭。浏览器不能直接读取专家正文，未配置相应服务端令牌时这些接口会关闭。问真后台采集动态流年、流月、流日或流时时，必须显式填写流盘目标日期，可选填写目标时间；不填写目标日期时不会默认使用当天，也不会生成 `flowQuery`。
 
-报告与命盘共用当前登录账号绑定的 HttpOnly 用户会话和服务端主体。报告详情只对创建它的账号主体返回；无会话、其他账号、旧无归属记录和不存在 ID 均返回 404。`GET /v1/reports` 默认只返回未归档报告，可用 `chartProfileId` 只看当前成员报告，也可用 `residenceProfileId` 只看某套住宅的报告；两者同时提供时取交集。`GET /v1/reports?archived=true` 返回当前账号主体自己的回收站，并同样支持成员和住宅筛选。`DELETE /v1/reports/:id` 只把 `completed` 或 `failed` 报告归档，不物理删除；归档会撤销已有分享并清除运行租约，报告详情仍可由创建者读取。归档报告不能创建分享，`GET /v1/reports/:id/pdf` 也会返回 `409`。`POST /v1/reports/:id/restore` 恢复自己的归档报告，恢复后不会自动恢复旧分享 token。
+报告与命盘共用当前登录账号绑定的 HttpOnly 用户会话和服务端主体。生产及本地产品默认设置 `REQUIRE_USER_AUTH=true`：命盘、住宅、照片和报告等私有接口在无用户会话时返回 `401`；登录后访问其他账号或不存在的数据仍返回 `404`，避免暴露资源是否存在。`GET /v1/reports` 默认只返回未归档报告，可用 `chartProfileId` 只看当前成员报告，也可用 `residenceProfileId` 只看某套住宅的报告；两者同时提供时取交集。`GET /v1/reports?archived=true` 返回当前账号主体自己的回收站，并同样支持成员和住宅筛选。`DELETE /v1/reports/:id` 只把 `completed` 或 `failed` 报告归档，不物理删除；归档会撤销已有分享并清除运行租约，报告详情仍可由创建者读取。归档报告不能创建分享，`GET /v1/reports/:id/pdf` 也会返回 `409`。`POST /v1/reports/:id/restore` 恢复自己的归档报告，恢复后不会自动恢复旧分享 token。
 
 首版报告通过服务端 validator 后进入 `completed`，创建者可立即读取；独立质检作为后台增强继续更新 `qualityStatus`。只有未归档且 `qualityStatus: passed` 的报告可由创建者调用 `POST /v1/reports/:id/share` 生成 7 天有效的分享 token；`pending`、`running`、`failed` 或已归档报告都不可分享。只读分享页使用 `/shared-report/:id#access=<token>`，token 保留在 URL fragment 中，不进入服务端访问日志。页面再通过 `x-report-share-token` 请求 `GET /v1/shared-reports/:id`。过期、撤销、错误 token、报告后来被降级、质检状态不再为 `passed`、报告被归档和不存在 ID 均统一返回 404，响应仍会剥离主体 ID、分享 hash 和私有上传 `fileId`。API 返回会移除私有上传 `fileId`，但服务端内部记录保留完整媒体引用用于视觉处理与审计。知识检索失败时报告先落为 queued，再更新为可查询的 failed 状态，不会留下无记录的裸 500。
 
 重新生成要求源报告属于当前账号主体、状态为 `completed`，并且同时具备 `chartProfileId`、`chartVersionId`、`residenceProfileId`、`residenceVersionId` 和已保存 `vision`。创建成功后返回 `202` 和新报告记录；新任务跳过视觉模型识别阶段，从视觉 checkpoint 之后继续跑当前知识检索、规则评估、Harness 报告生成和后台质检。
 
-命盘落库的数据边界、版本与删除语义见 `docs/chart-storage.md`；阶段 1 排盘基础产品的可复算路线见 `docs/phase-1-bazi-foundation.md`，依赖选型记录见 `docs/dependency-decisions-stage1.md`；问真/测测式能力对标见 `docs/competitor-bazi-reference.md`；阶段 0 到生产化的长期开发方案见 `docs/development-roadmap.md`；投资人演示前的本地验收步骤见 `docs/demo-acceptance-checklist.md`。C 端账号已可跨浏览器恢复自己的主体数据；未登录匿名凭证只作为首次绑定兼容层，生产前还需要补齐找回密码、租户隔离和隐私保留策略。
+命盘落库的数据边界、版本与删除语义见 `docs/chart-storage.md`；阶段 1 排盘基础产品的可复算路线见 `docs/phase-1-bazi-foundation.md`，依赖选型记录见 `docs/dependency-decisions-stage1.md`；问真/测测式能力对标见 `docs/competitor-bazi-reference.md`；阶段 0 到生产化的长期开发方案见 `docs/development-roadmap.md`；投资人演示前的本地验收步骤见 `docs/demo-acceptance-checklist.md`。C 端账号已可跨浏览器恢复自己的主体数据；旧匿名凭证只在首次登录时用于认领历史主体，不再允许未登录创建或读取私有数据。生产前还需要补齐找回密码、租户隔离和隐私保留策略。
 
 ## 单机部署 Demo
 

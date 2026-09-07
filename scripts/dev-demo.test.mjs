@@ -67,6 +67,7 @@ describe('dev-demo launcher', () => {
     assert.equal(api.env.ADMIN_USERNAME, 'admin')
     assert.equal(api.env.ADMIN_PASSWORD, 'admin123')
     assert.equal(api.env.ADMIN_ACTOR_ID, 'local-demo-editor')
+    assert.equal(api.env.REQUIRE_USER_AUTH, 'true')
     assert.equal(api.env.DEEPSEEK_API_KEY, 'user-configured-key')
     assert.equal(web.env.KNOWLEDGE_MCP_TOKEN, undefined)
     assert.equal(web.env.VITE_DEMO_ADMIN_USERNAME, undefined)

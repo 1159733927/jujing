@@ -3,6 +3,7 @@ import { parseDemoNetworkConfig } from './dev-demo.mjs'
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { deflateSync } from 'node:zlib'
 
 export class ReportE2eSmokeError extends Error {
   constructor(message) {
@@ -26,6 +27,11 @@ const USER_ACTION_SECTION_TITLE = /(?:^|\n)\s*(?:#{1,6}\s*)?(?:\*\*)?(?:可以�
 const DEFAULT_REPORT_E2E_TIMEOUT_MS = 900_000
 const DEFAULT_REPORT_E2E_WEB_ORIGIN = 'http://127.0.0.1:4173'
 const DEMO_IMAGE_URL = new URL('../8029.jpg', import.meta.url)
+const SYNTHETIC_DEMO_IMAGE = {
+  filename: 'synthetic-8029-floorplan.png',
+  type: 'image/png',
+  description: '脱敏合成户型图',
+}
 const DANGEROUS_CHANGE = /(?:拆|砸|敲)(?:除|掉)?(?:承重)?墙|拆改(?:墙体|承重|燃气|水电)|封(?:死)?(?:入户)?门|迁(?:移)?灶|改(?:动)?燃气管|破土动工/u
 const NEGATED_DANGEROUS_CHANGE = /(?:不|别|勿|无须|无需|禁止|避免|不建议|不要|不可|不涉及|不需要|不会|不能)[^。！？；;\n]{0,16}(?:拆|砸|敲|拆改|封(?:死)?(?:入户)?门|迁(?:移)?灶|改(?:动)?燃气管|破土动工)|不拆不改/u
 const GUARANTEED_OUTCOME = /(?<!不)(?<!并不)(?:保证|确保|必然|一定|百分之百).{0,10}(?:转运|改运|招财|旺财|旺运|化煞|消灾|升职|发财)|(?:转运|改运|招财|旺财|旺运|化煞).{0,8}(?:立刻|马上|必定|一定见效)/u
@@ -112,6 +118,93 @@ function hasSouthBalconyEvidence(report) {
       : '',
   ].filter(Boolean).join('。')
   return hasAffirmativeSouthBalconyMention(evidenceText)
+}
+
+let crcTable
+
+function crc32(buffer) {
+  crcTable ??= Array.from({ length: 256 }, (_, index) => {
+    let crc = index
+    for (let bit = 0; bit < 8; bit += 1) crc = (crc & 1) ? (0xedb88320 ^ (crc >>> 1)) : (crc >>> 1)
+    return crc >>> 0
+  })
+  let crc = 0xffffffff
+  for (const byte of buffer) crc = crcTable[(crc ^ byte) & 0xff] ^ (crc >>> 8)
+  return (crc ^ 0xffffffff) >>> 0
+}
+
+function pngChunk(type, data = Buffer.alloc(0)) {
+  const typeBuffer = Buffer.from(type, 'ascii')
+  const length = Buffer.alloc(4)
+  length.writeUInt32BE(data.length)
+  const checksum = Buffer.alloc(4)
+  checksum.writeUInt32BE(crc32(Buffer.concat([typeBuffer, data])))
+  return Buffer.concat([length, typeBuffer, data, checksum])
+}
+
+function fillRect(pixels, width, x, y, rectWidth, rectHeight, color) {
+  const [red, green, blue] = color
+  for (let row = Math.max(0, y); row < Math.min(y + rectHeight, Math.floor(pixels.length / 4 / width)); row += 1) {
+    for (let col = Math.max(0, x); col < Math.min(x + rectWidth, width); col += 1) {
+      const offset = (row * width + col) * 4
+      pixels[offset] = red
+      pixels[offset + 1] = green
+      pixels[offset + 2] = blue
+      pixels[offset + 3] = 255
+    }
+  }
+}
+
+function strokeRect(pixels, width, x, y, rectWidth, rectHeight, color, lineWidth = 3) {
+  fillRect(pixels, width, x, y, rectWidth, lineWidth, color)
+  fillRect(pixels, width, x, y + rectHeight - lineWidth, rectWidth, lineWidth, color)
+  fillRect(pixels, width, x, y, lineWidth, rectHeight, color)
+  fillRect(pixels, width, x + rectWidth - lineWidth, y, lineWidth, rectHeight, color)
+}
+
+export function createSyntheticDemoFloorPlanPng() {
+  const width = 720
+  const height = 520
+  const pixels = Buffer.alloc(width * height * 4, 255)
+  const ink = [40, 58, 47]
+  fillRect(pixels, width, 0, 0, width, height, [252, 248, 239])
+  strokeRect(pixels, width, 60, 60, 600, 400, ink, 5)
+  strokeRect(pixels, width, 80, 90, 270, 190, [82, 132, 103], 4)
+  strokeRect(pixels, width, 370, 90, 240, 130, [92, 118, 170], 4)
+  strokeRect(pixels, width, 380, 260, 160, 120, [184, 108, 78], 4)
+  strokeRect(pixels, width, 230, 310, 140, 120, [38, 121, 128], 4)
+  strokeRect(pixels, width, 420, 390, 140, 50, [195, 126, 55], 4)
+  fillRect(pixels, width, 630, 340, 28, 70, [195, 126, 55])
+  fillRect(pixels, width, 330, 440, 130, 16, [195, 126, 55])
+  const raw = Buffer.alloc((width * 4 + 1) * height)
+  for (let row = 0; row < height; row += 1) {
+    raw[row * (width * 4 + 1)] = 0
+    pixels.copy(raw, row * (width * 4 + 1) + 1, row * width * 4, (row + 1) * width * 4)
+  }
+  const header = Buffer.alloc(13)
+  header.writeUInt32BE(width, 0)
+  header.writeUInt32BE(height, 4)
+  header[8] = 8
+  header[9] = 6
+  header[10] = 0
+  header[11] = 0
+  header[12] = 0
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    pngChunk('IHDR', header),
+    pngChunk('IDAT', deflateSync(raw, { level: 9 })),
+    pngChunk('IEND'),
+  ])
+}
+
+export async function loadDemoImage(readFileFn = readFile) {
+  try {
+    const bytes = await readFileFn(DEMO_IMAGE_URL)
+    return { bytes, filename: '8029.jpg', type: 'image/jpeg', source: 'local-8029' }
+  } catch (error) {
+    if ((error?.code ?? '') !== 'ENOENT') throw error
+    return { bytes: createSyntheticDemoFloorPlanPng(), ...SYNTHETIC_DEMO_IMAGE, source: 'synthetic-fixture' }
+  }
 }
 
 function hasRenderedStructuredAction(text, point, expectedKind) {
@@ -388,6 +481,7 @@ export function assertHumanReadableReport(report, expectedBindings = {}) {
 export async function runReportE2eSmoke({
   env = process.env,
   fetchFn = fetch,
+  loadDemoImageFn = loadDemoImage,
   sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   now = () => Date.now(),
   log = (message) => process.stdout.write(`${message}\n`),
@@ -417,9 +511,9 @@ export async function runReportE2eSmoke({
   }
 
   let cookie = await resolveReportOwnerCookie({ env, fetchFn, apiOrigin, log })
-  const demoImage = await readFile(DEMO_IMAGE_URL)
+  const demoImage = await loadDemoImageFn()
   const upload = new FormData()
-  upload.append('image', new Blob([demoImage], { type: 'image/jpeg' }), '8029.jpg')
+  upload.append('image', new Blob([demoImage.bytes], { type: demoImage.type }), demoImage.filename)
   const media = await fetchJson(fetchFn, `${apiOrigin}/v1/media`, {
     method: 'POST',
     headers: headerWithCookie({ 'x-vision-consent': 'accepted' }, cookie),
@@ -433,7 +527,7 @@ export async function runReportE2eSmoke({
   }
   cookie = cookie || cookieFromSetCookieHeader(media.response)
   if (!cookie) throw new ReportE2eSmokeError('media upload did not establish an anonymous owner session')
-  log('[report-e2e] uploaded demo image')
+  log(`[report-e2e] uploaded demo image (${demoImage.source})`)
 
   const created = await fetchJson(fetchFn, `${apiOrigin}/v1/reports`, {
     method: 'POST',

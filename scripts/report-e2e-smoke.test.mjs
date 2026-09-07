@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { assertHumanReadableReport, buildReportShareUrl, CURRENT_REPORT_VALIDATOR_VERSION, isMainModule, ReportE2eSmokeError, runReportE2eSmoke } from './report-e2e-smoke.mjs'
+import { assertHumanReadableReport, buildReportShareUrl, createSyntheticDemoFloorPlanPng, CURRENT_REPORT_VALIDATOR_VERSION, isMainModule, loadDemoImage, ReportE2eSmokeError, runReportE2eSmoke } from './report-e2e-smoke.mjs'
 
 function response(body, status = 200, headers = {}) {
   return new Response(typeof body === 'string' ? body : JSON.stringify(body), { status, headers })
@@ -25,6 +25,13 @@ const OPEN_FORMAT_MIXED_REPORT_BODY = REPORT_BODY.replace(
   CONCLUSION,
   '结论先说：这套房和你的命盘大体合拍、带一处明显短板。',
 )
+
+const UNIT_IMAGE = {
+  bytes: Buffer.from([0xff, 0xd8, 0xff, 0xd9]),
+  filename: 'unit-floorplan.jpg',
+  type: 'image/jpeg',
+  source: 'unit-fixture',
+}
 
 function completedReport(id = 'report-1', chartProfileId = 'chart-profile-1', chartVersionId = 'chart-version-1', residenceProfileId = 'residence-profile-1', residenceVersionId = 'residence-version-1') {
   return {
@@ -85,8 +92,39 @@ describe('report e2e smoke verifier', () => {
     assert.equal(logs.some((line) => line.includes('RUN_REPORT_E2E=1')), true)
   })
 
+  it('creates a self-contained synthetic floor plan image for environments without private fixtures', () => {
+    const bytes = createSyntheticDemoFloorPlanPng()
+
+    assert.equal(Buffer.isBuffer(bytes), true)
+    assert.deepEqual([...bytes.subarray(0, 8)], [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+    assert.ok(bytes.length > 1_000)
+  })
+
+  it('falls back to a synthetic image only when the local demo image is absent', async () => {
+    const missing = new Error('fixture is not present in this checkout')
+    missing.code = 'ENOENT'
+
+    const demoImage = await loadDemoImage(async () => { throw missing })
+
+    assert.equal(demoImage.filename, 'synthetic-8029-floorplan.png')
+    assert.equal(demoImage.type, 'image/png')
+    assert.equal(demoImage.source, 'synthetic-fixture')
+    assert.deepEqual([...demoImage.bytes.subarray(0, 8)], [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+  })
+
+  it('does not hide unexpected demo image read failures', async () => {
+    const denied = new Error('permission denied')
+    denied.code = 'EACCES'
+
+    await assert.rejects(
+      () => loadDemoImage(async () => { throw denied }),
+      /permission denied/u,
+    )
+  })
+
   it('uploads, creates, polls and validates a completed human-readable report', async () => {
     const calls = []
+    const logs = []
     const fetchFn = async (url, options = {}) => {
       calls.push({ url: String(url), options })
       const value = String(url)
@@ -103,17 +141,19 @@ describe('report e2e smoke verifier', () => {
     const result = await runReportE2eSmoke({
       env: { PATH: '/bin', RUN_REPORT_E2E: '1', REPORT_E2E_POLL_ATTEMPTS: '1', REPORT_E2E_POLL_INTERVAL_MS: '1', REPORT_E2E_WEB_ORIGIN: 'http://127.0.0.1:4173/' },
       fetchFn,
+      loadDemoImageFn: async () => UNIT_IMAGE,
       sleep: async () => {},
-      log: () => {},
+      log: (message) => logs.push(message),
     })
 
     assert.equal(result.skipped, false)
     assert.equal(result.shareExpiresAt, '2026-09-04T00:00:00.000Z')
     assert.equal(result.shareUrl, 'http://127.0.0.1:4173/shared-report/report-1#access=share%20token%2Fwith%20symbols%3F')
     const uploaded = calls.find((call) => call.url.endsWith('/v1/media')).options.body.get('image')
-    assert.equal(uploaded.name, '8029.jpg')
+    assert.equal(uploaded.name, 'unit-floorplan.jpg')
     assert.equal(uploaded.type, 'image/jpeg')
-    assert.equal(uploaded.size, 67_435)
+    assert.equal(uploaded.size, 4)
+    assert.equal(logs.some((line) => line.includes('uploaded demo image (unit-fixture)')), true)
     const created = calls.find((call) => call.url.endsWith('/v1/reports'))
     const createdBody = JSON.parse(created.options.body)
     assert.equal(createdBody.birth.placeCode, '330106')

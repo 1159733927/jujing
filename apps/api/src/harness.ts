@@ -55,7 +55,7 @@ export class HarnessExecutionError extends Error {
 }
 
 const PROVENANCE_SCHEMA_VERSION = 'report-generation-provenance-v1' as const
-const PROMPT_SCHEMA_VERSION = 'fengshui-report-prompt-v13-practical-lead'
+const PROMPT_SCHEMA_VERSION = 'fengshui-report-prompt-v14-action-notice-placement'
 const HARNESS_PROFILE = 'sdk'
 const DEFAULT_REPORT_GENERATION_TIMEOUT_MS = 480_000
 const MIN_REPORT_GENERATION_TIMEOUT_MS = 30_000
@@ -789,7 +789,7 @@ function buildOutputContract(): string {
     '不要把不同方位或不同房间混在一起写：例如证据只写“厨房在南侧”时，只能讨论南侧厨房；不能扩写成“南侧厨房和阳台”“南侧采光面”“南侧门窗”。看不出的阳台、窗户、采光和外局，一律不要当成已知事实。',
     '必须有一段面向用户的“可以先这样做”，且实际输出必须写成“## 可以先这样做”。把行动建议写成 2 到 4 条短句：每条建议都尽量在同一条里写完整，用“位置：做法……；目的：……”的写法，每条都要落到具体位置、具体动作、目的，不要只说“保持整洁”“注意通风”“继续确认”。',
     '不要把报告写成资料清单、版本清单、规则清单或待确认清单；不要单独写“判断前提与可信度”“命盘需要”“住宅属性”“依据与版本”“引用依据”“资料来源”这类后台或模板章节。每个主要段落都要有结论。正文不必逐项写标题、版本、来源标签或规则全文；这些已保存在详细依据记录里。只有自然表达确有帮助时才简短提及来源。',
-    '禁止建议拆墙、改承重结构、封门窗、改燃气水电或要求用户搬家；禁止宣称任何建议必然转运、发财、治病或改变婚育。正文里也不要复述这些禁止项名称，统一写成“只做低成本、可撤销的日常布置调整”。',
+    '禁止建议拆墙、改承重结构、封门窗、改燃气水电或要求用户搬家；禁止宣称任何建议必然转运、发财、治病或改变婚育。不要在首段或分析段反复写免责/兜底话；“低成本、可撤销”只需在行动建议段落最后说一次。',
     '把人宅合拍判断作为专业分析的主线，自然地交代关键命盘依据、住宅依据和来源。不得伪造来源，也不得把自己的推断写成排盘确定结论或专家原话。不要写“参考已发布专家资料/中州派资料，所以本宅对用户是顺的/合拍的”这类归因；专家资料只能支持方法论，最终人宅合拍结论必须说成“按已知命盘、户型和本次合参判断”。',
     '五行分布、月令、格局候选、神煞等命盘内容必须保留它们在输入中的事实属性和不确定程度，不得重新排盘或将候选值升级为确定的喜神、忌神、用神、旺衰或格局。',
     '只允许普通 Markdown 标题、段落和列表；禁止代码块、裸代码、JSON、表格和 HTML。',
@@ -1291,6 +1291,17 @@ function structuredCompatibilityActions(record: ReportRecord, kinds?: ReadonlySe
     .slice(0, 3)
 }
 
+function normalizeLowRiskActionNotice(report: string): string {
+  const withoutNotice = report
+    .replaceAll(LOW_RISK_ACTION_NOTICE, '')
+    .replace(/\n{3,}/gu, '\n\n')
+    .trim()
+  if (!REPORT_ACTION_SECTION_PRESENT.test(withoutNotice)) return withoutNotice
+  return withoutNotice.includes(CULTURAL_USE_NOTICE)
+    ? withoutNotice.replace(CULTURAL_USE_NOTICE, `${LOW_RISK_ACTION_NOTICE}\n\n${CULTURAL_USE_NOTICE}`)
+    : `${withoutNotice}\n\n${LOW_RISK_ACTION_NOTICE}`
+}
+
 function appendStructuredActions(report: string, record: ReportRecord): string {
   const compatibility = record.compatibility
   const requiredKinds = new Set<'amplify' | 'mitigate'>()
@@ -1327,7 +1338,7 @@ function appendStructuredActions(report: string, record: ReportRecord): string {
 function ensureStructuredCompatibilitySupport(report: string, record: ReportRecord): string {
   const restored = restoreStructuredCompatibilitySections(report, record)
   const translated = rewriteSourceAttributionOverreach(rewriteUserFacingHighRiskOptionMentions(rewriteUserFacingInternalAnalysisTerms(restored)))
-  return rewriteSourceAttributionOverreach(rewriteUserFacingHighRiskOptionMentions(rewriteUserFacingInternalAnalysisTerms(appendStructuredActions(translated, record))))
+  return normalizeLowRiskActionNotice(rewriteSourceAttributionOverreach(rewriteUserFacingHighRiskOptionMentions(rewriteUserFacingInternalAnalysisTerms(appendStructuredActions(translated, record)))))
 }
 
 const REPORT_ACTION_TARGET = /住宅|房屋|户型|客厅|卧室|主卧|次卧|厨房|卫生间|洗手间|入户|玄关|阳台|餐厅|书房|门|窗|采光|家具|床|床头|书桌|灶台|照片|朝向|方位|中宫|中心|中央区域/u

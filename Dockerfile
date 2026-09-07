@@ -24,10 +24,11 @@ COPY services/knowledge-mcp/package.json services/knowledge-mcp/package.json
 COPY fengshui-report-plugin/package.json fengshui-report-plugin/package.json
 RUN pnpm install --frozen-lockfile
 
-COPY . .
-RUN pnpm build
+COPY deepseek-harness deepseek-harness
 RUN corepack pnpm@11.7.0 -C deepseek-harness install --frozen-lockfile
 RUN DSH_CLIENT_COMMIT_HASH=$HARNESS_COMMIT corepack pnpm@11.7.0 -C deepseek-harness build
+COPY . .
+RUN pnpm build
 
 FROM ${NODE_IMAGE} AS api
 ARG APT_MIRROR_HOST

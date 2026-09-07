@@ -23,6 +23,13 @@ checked-out Harness repository. This is correct for a self-contained investor
 Demo, but it makes the image larger. A later production hardening pass should
 replace this with a pinned packaged Harness artifact.
 
+The Docker build keeps the Harness install/build in its own cache layer before
+copying the application source. Routine API, web, admin or prompt changes should
+therefore reuse the expensive Harness layer as long as `deepseek-harness/` and
+the base image inputs do not change. If the Harness layer is not cached on a
+small VM, the first rebuild can still be CPU and I/O heavy; prefer doing that
+outside an investor walkthrough window.
+
 WenZhen evidence files are content-addressed screenshots used to audit external
 comparison fixtures. The repository stores only the detached manifest metadata
 and relative evidence references; deployment must mount the evidence directory on

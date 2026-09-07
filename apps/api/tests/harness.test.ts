@@ -351,7 +351,7 @@ describe('Harness command boundary', () => {
     expect(captured?.options.env).not.toHaveProperty('FENGSHUI_KNOWLEDGE_API_TOKEN')
     expect(captured?.options.env.FENGSHUI_STORAGE_DRIVER).toBe('file')
     expect(captured?.options.env).not.toHaveProperty('UNAPPROVED_TEST_SECRET')
-    expect(captured?.prompt).toContain('命盘已按程序采用真太阳时校正')
+    expect(captured?.prompt).toContain('命盘已采用真太阳时校正')
     expect(captured?.prompt).not.toContain('true-solar-v2-zone-meridian-equation-of-time')
     expect(captured?.prompt).toContain('不得重新排盘、重新计算时间修正')
     expect(captured?.prompt).toContain('自由选择最适合该案例的结构、标题和篇幅')
@@ -512,7 +512,7 @@ describe('Harness command boundary', () => {
         },
       },
     }, runner)).resolves.toMatchObject({ report: expect.stringContaining('命盘采用真太阳时校正') })
-    expect(prompt).toContain('命盘已按程序采用真太阳时校正')
+    expect(prompt).toContain('命盘已采用真太阳时校正')
     expect(prompt).not.toContain('true-solar-v3-standard-time-equation-of-time')
     expect(prompt).not.toContain('true-solar-v2-zone-meridian-equation-of-time')
   })

@@ -191,7 +191,7 @@ describe('Harness report prompt', () => {
     expect(prompt).toContain('命盘需要与住宅朝向、格局、门窗、房间位置等已知信息是否合拍')
     expect(prompt).toContain('请直接给出总体判断、合拍之处、冲突之处及其依据')
     expect(prompt).toContain('信息不足的地方必须明确说明，不得编造')
-    expect(prompt).toContain('命盘已按程序采用真太阳时校正')
+    expect(prompt).toContain('命盘已采用真太阳时校正')
     expect(prompt).toContain('已绑定已发布专家流派规则')
     expect(prompt).not.toContain('bazi-v1')
     expect(prompt).not.toContain('demo-school:v1:0123456789abcdef')
@@ -209,9 +209,9 @@ describe('Harness report prompt', () => {
     expect(prompt).not.toContain('preserve-daylight')
     expect(prompt).toContain('旺衰：已计算')
     expect(prompt).toContain('Neutral strength label')
-    expect(prompt).toContain('扶抑方向（基线）：已计算')
+    expect(prompt).toContain('五行取向参考：已计算')
     expect(prompt).toContain('排盘里的五行轻重偏向生助日主的五行')
-    expect(prompt).toContain('以下是程序已派生的命盘专业结论，可自然融入判断')
+    expect(prompt).toContain('以下命盘专业结论可自然融入判断')
     expect(prompt).toContain('1. 旺衰：Neutral strength label')
     expect(prompt).toContain('2. 初步五行倾向：排盘里的五行轻重偏向生助日主的五行')
     expect(prompt).toContain('自由选择最适合该案例的结构、标题和篇幅')
@@ -257,7 +257,7 @@ describe('Harness report prompt', () => {
       },
     })
 
-    expect(prompt).toContain('扶抑基线（非完整旺衰）：已计算')
+    expect(prompt).toContain('日主支撑参考（非完整旺衰）：已计算')
     expect(prompt).not.toContain('\n旺衰：可用')
   })
 
@@ -310,8 +310,8 @@ describe('Harness report prompt', () => {
       },
     })
 
-    expect(prompt).toContain('以下是程序已派生的命盘专业结论，可自然融入判断')
-    expect(prompt).toContain('“初步五行倾向”只能按基线候选呈现')
+    expect(prompt).toContain('以下命盘专业结论可自然融入判断')
+    expect(prompt).toContain('“初步五行倾向”只能写成参考方向')
     expect(prompt).toContain('旺衰：日主扶助力量偏少，需要以月令和透干作保守合参。')
     expect(prompt).toContain('格局：格局暂按月令财星透出作保守参考。')
     expect(prompt).toContain('初步五行倾向：排盘里的五行轻重显示可参考的有利方向为同类与印星五行，不要直接当成确定喜用神。')

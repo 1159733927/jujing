@@ -188,7 +188,7 @@ describe('professional reasoning eval contract', () => {
   it('keeps element preference as support-balance candidates instead of a definitive useful-god verdict', () => {
     const prompt = buildProfessionalReasoningPrompt(record)
 
-    expect(prompt).toContain('扶抑方向（基线）：已计算')
+    expect(prompt).toContain('五行取向参考：已计算')
     expect(prompt).toContain('可参考五行：木、火')
     expect(prompt).toContain('需要少用或压低的五行：金、水')
     expect(prompt).toContain('仅为五行扶抑候选方向')

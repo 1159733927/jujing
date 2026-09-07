@@ -347,12 +347,12 @@ async function prepareIsolatedHarnessHome(projectDirectory: string, profilePatch
 const PROFESSIONAL_ASSESSMENT_LABELS: Readonly<Record<BaziAssessmentName, string>> = {
   strength: '旺衰',
   pattern: '格局',
-  elementPreference: '扶抑方向（基线）',
+  elementPreference: '五行取向参考',
   shenSha: '神煞',
 }
 
 function professionalAssessmentLabel(name: BaziAssessmentName, assessment?: ProfessionalAssessmentResult): string {
-  if (name === 'strength' && assessment?.provenance?.ruleSetVersion === 'baseline-v1') return '扶抑基线（非完整旺衰）'
+  if (name === 'strength' && assessment?.provenance?.ruleSetVersion === 'baseline-v1') return '日主支撑参考（非完整旺衰）'
   return PROFESSIONAL_ASSESSMENT_LABELS[name]
 }
 
@@ -625,7 +625,7 @@ function buildChartContext(record: ReportRecord): string {
   const timeCorrectionRuleVersion = actualTimeCorrectionRuleVersion(record) ?? '未记录（legacy 命盘缺失，不得补写或推断）'
   const timeCorrectionSummary = timeCorrectionRuleVersion.startsWith('未记录')
     ? '命盘未记录具体时间校正规则；正文只能说明旧命盘缺少该审计信息，不得补写或推断。'
-    : '命盘已按程序采用真太阳时校正；具体技术版本保存在系统审计元数据中，正文只用自然语言说明。'
+    : '命盘已采用真太阳时校正；具体技术版本保存在系统审计元数据中，正文只用自然语言说明。'
   return [
     `出生日期：${record.submission.birth?.date ?? '未记录'}。`,
     `出生时间：${record.submission.birth?.time ?? '未记录'}。`,
@@ -636,7 +636,7 @@ function buildChartContext(record: ReportRecord): string {
     supportDimensionsForPrompt(record),
     '受治理专业评估：',
     professionalAssessmentsForPrompt(record),
-    '以下是程序已派生的命盘专业结论，可自然融入判断；其中“初步五行倾向”只能按基线候选呈现，不得包装成确定喜神、忌神或用神，也不得改写为更确定的旺衰或格局定论：',
+    '以下命盘专业结论可自然融入判断；其中“初步五行倾向”只能写成参考方向，不得包装成确定喜神、忌神或用神，也不得改写为更确定的旺衰或格局定论：',
     requiredProfessionalConclusionLines(record),
   ].join('\n')
 }

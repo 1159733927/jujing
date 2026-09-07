@@ -1299,7 +1299,7 @@ function normalizeLowRiskActionNotice(report: string): string {
   if (!REPORT_ACTION_SECTION_PRESENT.test(withoutNotice)) return withoutNotice
   return withoutNotice.includes(CULTURAL_USE_NOTICE)
     ? withoutNotice.replace(CULTURAL_USE_NOTICE, `${LOW_RISK_ACTION_NOTICE}\n\n${CULTURAL_USE_NOTICE}`)
-    : `${withoutNotice}\n\n${LOW_RISK_ACTION_NOTICE}`
+    : `${withoutNotice}\n\n${LOW_RISK_ACTION_NOTICE}\n\n${CULTURAL_USE_NOTICE}`
 }
 
 function appendStructuredActions(report: string, record: ReportRecord): string {

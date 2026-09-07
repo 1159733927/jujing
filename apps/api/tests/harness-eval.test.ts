@@ -344,6 +344,74 @@ ${CULTURAL_USE_NOTICE}`
     expect(result.report.indexOf(notice)).toBeGreaterThan(result.report.indexOf('## 可以先这样做'))
   })
 
+  it('keeps a usable report when the model forgets the fixed cultural-use notice', async () => {
+    vi.stubEnv('DEEPSEEK_API_KEY', 'test-deepseek-key')
+    const modelReport = `结论先说：这套房和你的命盘局部合拍，南侧厨房是主要加分项，中宫附近卫生间是主要扣分项，先处理卫生间湿气。
+
+南侧厨房与丙火日主存在火性呼应。命盘依据：日主为丙火，四柱完整。住宅依据：住宅整体朝南，厨房在南侧。
+
+中宫附近卫生间会削弱住宅中心稳定感。命盘依据：命盘这一侧更需要稳定感。住宅依据：卫生间靠近户型中心区域。
+
+## 可以先这样做
+
+- 在南侧厨房，保留厨房台面清爽，避免杂物压住南侧操作动线，目的：放大南侧厨房对丙火日主的火性呼应。
+- 在靠近中宫的卫生间，保持门常关、地面干爽、排风顺畅，门口和过道不要堆放杂物，目的：减少湿气和杂乱对住宅中心区域的影响。`
+    const runner: HarnessCommandRunner = async () => ({ stdout: modelReport })
+
+    const result = await generateReportWithRunner({
+      ...baseRecord,
+      compatibility: {
+        assessable: true,
+        overallLevel: 'mixed',
+        confidence: 'medium',
+        positiveMatches: [{
+          conclusion: '南侧厨房与丙火日主存在火性呼应。',
+          chartEvidence: '日主为丙火，四柱完整。',
+          residenceEvidence: '住宅整体朝南，厨房在南侧。',
+          ruleTitle: '南向厨房规则',
+          ruleVersion: 1,
+          ruleVersionId: 'rule-kitchen:v1:fedcba9876543210',
+          sourceLabel: '确定性规则',
+          origin: 'deterministic-rule',
+          level: 'info',
+          actions: [{
+            kind: 'amplify',
+            location: '南侧厨房',
+            action: '保留厨房台面清爽，避免杂物压住南侧操作动线。',
+            intendedEffect: '放大南侧厨房对丙火日主的火性呼应。',
+            verification: '观察厨房台面和南侧动线是否持续清爽。',
+            safety: 'reversible-low-risk',
+          }],
+        }],
+        conflicts: [{
+          conclusion: '中宫附近卫生间会削弱住宅中心稳定感。',
+          chartEvidence: '命盘这一侧更需要稳定感。',
+          residenceEvidence: '卫生间靠近户型中心区域。',
+          ruleTitle: '中宫卫生间规则',
+          ruleVersion: 1,
+          ruleVersionId: 'rule-bath:v1:abcdef0123456789',
+          sourceLabel: '确定性规则',
+          origin: 'deterministic-rule',
+          level: 'attention',
+          actions: [{
+            kind: 'mitigate',
+            location: '靠近中宫的卫生间',
+            action: '保持门常关、地面干爽、排风顺畅，门口和过道不要堆放杂物。',
+            intendedEffect: '减少湿气和杂乱对住宅中心区域的影响。',
+            verification: '检查卫生间通风、异味、潮湿和门外动线。',
+            safety: 'reversible-low-risk',
+          }],
+        }],
+        neutralOrUnknown: [],
+        criticalMissingFacts: [],
+      },
+    }, runner)
+
+    expect(result.generationProvenance).toMatchObject({ validatorResult: 'pass' })
+    expect(result.report).toContain(CULTURAL_USE_NOTICE)
+    expect(result.report.indexOf(CULTURAL_USE_NOTICE)).toBeGreaterThan(result.report.indexOf('## 可以先这样做'))
+  })
+
   it('does not append a duplicate adjustment checklist when natural prose already covers amplify and mitigate actions', async () => {
     vi.stubEnv('DEEPSEEK_API_KEY', 'test-deepseek-key')
     const record: ReportRecord = {

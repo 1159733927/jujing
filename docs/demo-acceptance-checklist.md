@@ -49,9 +49,9 @@ REPORT_E2E_PASSWORD=demo-password \
 RUN_REPORT_E2E=1 pnpm smoke:report
 ```
 
-当前产品默认开启用户账号体系，所以真实报告 smoke 会先使用 `REPORT_E2E_USERNAME` / `REPORT_E2E_PASSWORD` 登录，再上传户型图并创建报告。若是全新环境，可临时追加 `REPORT_E2E_CREATE_USER=1` 和本地/测试环境的 `REPORT_E2E_ADMIN_TOKEN`，脚本会先通过后台接口创建验收账号再登录；已有浏览器会话也可用 `REPORT_E2E_COOKIE` 直接指定 owner cookie。不要把正式用户密码、cookie 或 token 写进仓库。
+当前产品默认开启用户账号体系，所以真实报告 smoke 会先使用 `REPORT_E2E_USERNAME` / `REPORT_E2E_PASSWORD` 登录，再上传户型图并创建报告。若仓库根目录存在本地演示图 `8029.jpg`，脚本会优先使用它；如果不存在，会自动生成一张脱敏合成户型图，避免服务器或干净 checkout 因缺少私有素材而失败。若是全新环境，可临时追加 `REPORT_E2E_CREATE_USER=1` 和本地/测试环境的 `REPORT_E2E_ADMIN_TOKEN`，脚本会先通过后台接口创建验收账号再登录；已有浏览器会话也可用 `REPORT_E2E_COOKIE` 直接指定 owner cookie。不要把正式用户密码、cookie 或 token 写进仓库。
 
-成功时脚本会等待报告通过 validator、进入 `completed`，并在后台质量增强达到 `qualityStatus: passed` 后创建 7 天有效的只读分享链接，输出 `/shared-report/:id#access=<token>`。可用 `REPORT_E2E_WEB_ORIGIN` 覆盖默认的 `http://127.0.0.1:4173`；不要把 fragment token 改为 query 参数或持久化到浏览器存储。
+成功时脚本会等待报告通过 validator、进入 `completed`，并在后台质量增强达到 `qualityStatus: passed` 后创建 7 天有效的只读分享链接。默认日志只输出报告 ID 并隐藏访问 token；需要人工打开分享页时，临时设置 `REPORT_E2E_PRINT_SHARE_URL=1` 才会输出 `/shared-report/:id#access=<token>`。可用 `REPORT_E2E_WEB_ORIGIN` 覆盖默认的 `http://127.0.0.1:4173`；不要把 fragment token 改为 query 参数或持久化到浏览器存储。
 
 恢复验收还应确认：在视觉、规则、Harness 草稿或质量审核完成后中断服务，重启后对应已完成阶段不会再次调用模型；旧 worker 丢失 lease 后不得删除新 worker 仍需使用的上传图片。
 

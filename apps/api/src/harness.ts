@@ -417,14 +417,14 @@ function professionalAssessmentLine(name: BaziAssessmentName, assessment: Profes
   const provenance = assessment?.provenance
   if (assessment?.status === 'derived' && provenance?.assessment === name) {
     const conclusions = professionalAssessmentConclusions(name, assessment)
-    const conclusionText = conclusions.length > 0 ? conclusions.join('；') : '无匹配项'
+    const conclusionText = conclusions.length > 0 ? conclusions.map((conclusion) => trimTerminalPunctuation(reportFriendlyAssessmentText(conclusion))).join('；') : '无匹配项'
     const direction = name === 'elementPreference' && assessment.elementDirection
-      ? `候选五行：${assessment.elementDirection.candidateElements.join('、') || '不指定'}；基线需谨慎五行：${assessment.elementDirection.cautiousElements.join('、') || '不指定'}；限制：${assessment.elementDirection.limitations.join('；')}。`
+      ? `可参考五行：${elementLabels(assessment.elementDirection.candidateElements)}；需要少用或压低的五行：${elementLabels(assessment.elementDirection.cautiousElements)}；使用边界：${assessment.elementDirection.limitations.map(reportFriendlyAssessmentText).join('；')}。`
       : ''
-    return `${label}：可用；结论：${conclusionText}。${direction}版本与来源已在系统审计元数据中记录。扶抑候选不得改写为确定喜神、忌神或用神。`
+    return `${label}：已计算；可写给用户的说法：${conclusionText}。${direction}`
   }
 
-  return `${label}：程序层本次暂无确定结论。只能描述已提供的客观事实，不得自行断定身强、身弱、从格、具体格局、喜神、忌神或用神。`
+  return `${label}：本次没有可直接写给用户的结论；报告不用单独提这一项。`
 }
 
 function professionalAssessmentsForPrompt(record: ReportRecord): string {
@@ -444,33 +444,33 @@ function requiredProfessionalConclusionLines(record: ReportRecord): string {
         ? '初步五行倾向'
         : professionalAssessmentLabel(name, assessment)
       const conclusions = professionalAssessmentConclusions(name, assessment)
-      return conclusions.map((conclusion) => `${label}：${conclusion}`)
+      return conclusions.map((conclusion) => `${label}：${reportFriendlyAssessmentText(conclusion)}`)
     })
   return lines.length > 0
     ? lines.map((line, index) => `${index + 1}. ${line}`).join('\n')
-    : '无已派生命盘专业结论；正文不得自行补写旺衰、格局、喜忌或神煞定论。'
+    : '没有必须写入正文的命盘专业结论；可使用四柱、日主、五行计数、月令和住宅事实作谨慎合参。'
 }
 
 function monthCommandForPrompt(record: ReportRecord): string {
   const facts = record.bazi.monthCommand
-  if (!facts) return '月令记录：旧命盘未记录，不得补写。'
+  if (!facts) return '月令参考：旧命盘未记录；报告不用单独提这一项。'
   const visibleAt = facts.mainQiVisibleAt.map((position) => PILLAR_POSITION_LABELS[position] ?? position).join('、') || '未见主气透干'
-  return `月令记录：${facts.branch}月；主气${facts.mainQiStem}（${ELEMENT_LABELS[facts.mainQiElement] ?? facts.mainQiElement}）；对日主十神为${facts.mainQiTenGod}；主气同干出现位置：${visibleAt}；在扶抑基线下${facts.supportsDayMasterBaseline ? '扶助日主' : '不扶助日主'}。这是排盘层面的事实，不得自动升级为身强、身弱、从格、具体格局、喜神、忌神或用神结论。`
+  return `月令参考：${facts.branch}月；主气${facts.mainQiStem}（${ELEMENT_LABELS[facts.mainQiElement] ?? facts.mainQiElement}）；对日主十神为${facts.mainQiTenGod}；主气同干出现位置：${visibleAt}；对日主的支撑倾向：${facts.supportsDayMasterBaseline ? '有扶助' : '扶助不明显'}。这是命盘事实，可用于解释五行气势，但不要写成绝对吉凶。`
 }
 
 function supportDimensionsForPrompt(record: ReportRecord): string {
   const facts = record.bazi.supportDimensions
-  if (!facts) return '得令、得地、得助依据：旧命盘未记录，不得补写。'
+  if (!facts) return '得令、得地、得助线索：旧命盘未记录；报告不用单独提这一项。'
   const branchLabels: Readonly<Record<string, string>> = { year: '年支', month: '月支', day: '日支', hour: '时支' }
   const stems = (positions: readonly string[]): string => positions.map((position) => PILLAR_POSITION_LABELS[position] ?? position).join('、') || '未见'
   const branches = facts.rootedAt.map((position) => branchLabels[position] ?? position).join('、') || '四支未见同类根'
-  return `得令、得地、得助依据：月令主气${facts.monthCommandSupports ? '扶助' : '不扶助'}日主；同类根位于${branches}；同类透干位置：${stems(facts.visiblePeerAt)}；印星透干位置：${stems(facts.visibleResourceAt)}。这是排盘层面的依据，尚未等同于完整旺衰结论。`
+  return `得令、得地、得助线索：月令主气${facts.monthCommandSupports ? '扶助' : '不扶助'}日主；同类根位于${branches}；同类透干位置：${stems(facts.visiblePeerAt)}；印星透干位置：${stems(facts.visibleResourceAt)}。可用于解释日主支撑强弱的倾向。`
 }
 
 function fiveElementsForPrompt(record: ReportRecord): string {
   const counts = record.bazi.fiveElements?.counts
-  if (!counts) return '五行计数：旧命盘未记录，不得补写或推断。'
-  return `五行计数（按显性天干和地支本气归类）：木${counts.wood}、火${counts.fire}、土${counts.earth}、金${counts.metal}、水${counts.water}。这是排盘统计口径，不等同于完整旺衰、格局或喜忌结论。`
+  if (!counts) return '五行分布参考：旧命盘未记录；报告不用单独提这一项。'
+  return `五行分布参考（按显性天干和地支本气归类）：木${counts.wood}、火${counts.fire}、土${counts.earth}、金${counts.metal}、水${counts.water}。可用于解释住宅方位与个人气质的匹配倾向。`
 }
 
 function actualTimeCorrectionRuleVersion(record: ReportRecord): string | undefined {
@@ -495,6 +495,25 @@ function sanitizeEvidenceText(value: string): string {
     .replace(/\bearth\b/giu, '土')
     .replace(/\bmetal\b/giu, '金')
     .replace(/\bwater\b/giu, '水')
+}
+
+function elementLabels(values: readonly string[] | undefined): string {
+  if (!values?.length) return '不指定'
+  return values.map((value) => ELEMENT_LABELS[value] ?? value).join('、')
+}
+
+function reportFriendlyAssessmentText(value: string): string {
+  return sanitizeEvidenceText(value)
+    .replace(/扶抑基线/gu, '排盘里的五行轻重')
+    .replace(/候选补益方向/gu, '可参考的有利方向')
+    .replace(/候选平衡方向/gu, '可参考的平衡方向')
+    .replace(/候选五行/gu, '可参考五行')
+    .replace(/具体喜用仍待流派规则复核/gu, '正式版会继续结合专家规则复核')
+    .replace(/不是完整喜用神结论/gu, '不要直接当成确定喜用神')
+}
+
+function trimTerminalPunctuation(value: string): string {
+  return value.replace(/[。；;.\s]+$/u, '')
 }
 
 function budgetNotice(label: string, total: number, limit: number): string {
@@ -726,7 +745,7 @@ function buildCitationContext(record: ReportRecord): string {
 function buildCompatibilityContext(record: ReportRecord): string {
   const compatibility = record.compatibility
   if (!compatibility) {
-    return '人宅合拍判断摘要：本次没有已有合拍判断；正文只能写证据不足，不能自行下结论。'
+    return '人宅合拍判断摘要：本次没有预先生成的合拍判断；请根据下面命盘、住宅和图片事实先做有边界的传统合参，信息不足处只影响对应局部。'
   }
   const formatPoint = (point: PersonHouseCompatibilityAssessment['positiveMatches'][number], index: number) => [
     `${index + 1}. 结论：${sanitizeEvidenceText(point.conclusion)}`,

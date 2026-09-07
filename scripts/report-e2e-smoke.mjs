@@ -185,6 +185,79 @@ async function fetchJson(fetchFn, url, options = {}) {
   return { response, payload }
 }
 
+function cookieFromSetCookieHeader(response) {
+  return response.headers.get('set-cookie')?.split(';')[0] ?? ''
+}
+
+function headerWithCookie(headers, cookie) {
+  return cookie ? { ...headers, cookie } : headers
+}
+
+async function loginReportSmokeUser(fetchFn, apiOrigin, username, password) {
+  return fetchJson(fetchFn, `${apiOrigin}/v1/auth/login`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  })
+}
+
+async function createReportSmokeUser(fetchFn, apiOrigin, token, username, displayName, password) {
+  return fetchJson(fetchFn, `${apiOrigin}/v1/admin/users`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ username, displayName, password }),
+  })
+}
+
+async function resolveReportOwnerCookie({ env, fetchFn, apiOrigin, log }) {
+  const explicitCookie = typeof env.REPORT_E2E_COOKIE === 'string' ? env.REPORT_E2E_COOKIE.trim() : ''
+  if (explicitCookie) {
+    log('[report-e2e] using supplied owner session cookie')
+    return explicitCookie
+  }
+
+  const username = typeof env.REPORT_E2E_USERNAME === 'string' ? env.REPORT_E2E_USERNAME.trim() : ''
+  const password = typeof env.REPORT_E2E_PASSWORD === 'string' ? env.REPORT_E2E_PASSWORD : ''
+  if (!username && !password) return ''
+  if (!username || !password) throw new ReportE2eSmokeError('REPORT_E2E_USERNAME and REPORT_E2E_PASSWORD must be provided together')
+
+  let login = await loginReportSmokeUser(fetchFn, apiOrigin, username, password)
+  if (login.response.status === 200) {
+    const cookie = cookieFromSetCookieHeader(login.response)
+    if (!cookie) throw new ReportE2eSmokeError('user login succeeded but did not return a session cookie')
+    log('[report-e2e] logged in report smoke user')
+    return cookie
+  }
+
+  const adminToken = typeof env.REPORT_E2E_ADMIN_TOKEN === 'string' && env.REPORT_E2E_ADMIN_TOKEN.trim()
+    ? env.REPORT_E2E_ADMIN_TOKEN.trim()
+    : typeof env.ADMIN_API_TOKEN === 'string' && env.ADMIN_API_TOKEN.trim()
+      ? env.ADMIN_API_TOKEN.trim()
+      : ''
+  if (login.response.status === 401 && env.REPORT_E2E_CREATE_USER === '1' && adminToken) {
+    const displayName = typeof env.REPORT_E2E_DISPLAY_NAME === 'string' && env.REPORT_E2E_DISPLAY_NAME.trim()
+      ? env.REPORT_E2E_DISPLAY_NAME.trim()
+      : '报告验收用户'
+    const created = await createReportSmokeUser(fetchFn, apiOrigin, adminToken, username, displayName, password)
+    if (created.response.status !== 201 && created.response.status !== 409) {
+      throw new ReportE2eSmokeError(`report smoke user creation failed with HTTP ${created.response.status}`)
+    }
+    log(created.response.status === 201 ? '[report-e2e] created report smoke user' : '[report-e2e] report smoke user already exists')
+    login = await loginReportSmokeUser(fetchFn, apiOrigin, username, password)
+    if (login.response.status === 200) {
+      const cookie = cookieFromSetCookieHeader(login.response)
+      if (!cookie) throw new ReportE2eSmokeError('user login after creation succeeded but did not return a session cookie')
+      log('[report-e2e] logged in report smoke user')
+      return cookie
+    }
+  }
+
+  if (login.response.status === 401) {
+    throw new ReportE2eSmokeError('report smoke user login failed with HTTP 401; provide a valid REPORT_E2E_USERNAME/REPORT_E2E_PASSWORD or set REPORT_E2E_CREATE_USER=1 with an admin token')
+  }
+  throw new ReportE2eSmokeError(`report smoke user login failed with HTTP ${login.response.status}`)
+}
+
 function isReportE2eTerminal(report) {
   if (report?.status === 'failed') return true
   return report?.status === 'completed' && (report.qualityStatus === 'passed' || report.qualityStatus === 'failed')
@@ -335,18 +408,22 @@ export async function runReportE2eSmoke({
     throw new ReportE2eSmokeError('current demo bazi rule profile is unavailable')
   }
 
+  let cookie = await resolveReportOwnerCookie({ env, fetchFn, apiOrigin, log })
   const demoImage = await readFile(DEMO_IMAGE_URL)
   const upload = new FormData()
   upload.append('image', new Blob([demoImage], { type: 'image/jpeg' }), '8029.jpg')
   const media = await fetchJson(fetchFn, `${apiOrigin}/v1/media`, {
     method: 'POST',
-    headers: { 'x-vision-consent': 'accepted' },
+    headers: headerWithCookie({ 'x-vision-consent': 'accepted' }, cookie),
     body: upload,
   })
   if (media.response.status !== 201 || typeof media.payload.fileId !== 'string') {
+    if (media.response.status === 401 && !cookie) {
+      throw new ReportE2eSmokeError('media upload failed with HTTP 401; this API requires a user session, set REPORT_E2E_USERNAME/REPORT_E2E_PASSWORD or REPORT_E2E_COOKIE')
+    }
     throw new ReportE2eSmokeError(`media upload failed with HTTP ${media.response.status}`)
   }
-  const cookie = media.response.headers.get('set-cookie')?.split(';')[0] ?? ''
+  cookie = cookie || cookieFromSetCookieHeader(media.response)
   if (!cookie) throw new ReportE2eSmokeError('media upload did not establish an anonymous owner session')
   log('[report-e2e] uploaded demo image')
 

@@ -146,6 +146,116 @@ describe('report e2e smoke verifier', () => {
     assert.equal(new Headers(sharedRead.options.headers).get('x-report-share-token'), 'share token/with symbols?')
   })
 
+  it('logs in before uploading media when user credentials are provided', async () => {
+    const calls = []
+    const fetchFn = async (url, options = {}) => {
+      calls.push({ url: String(url), options })
+      const value = String(url)
+      if (value.endsWith('/ready/report')) return response({ status: 'ready' })
+      if (value.endsWith('/v1/bazi-rule-profile-versions/active')) return response([{ key: 'demo-traditional-solar-time', versionId: 'demo-profile-v2' }])
+      if (value.endsWith('/v1/auth/login')) return response({ authenticated: true }, 200, { 'set-cookie': 'fengshui_user_session=user-session; Path=/' })
+      if (value.endsWith('/v1/media')) return response({ fileId: 'demo-image.png' }, 201)
+      if (value.endsWith('/v1/reports')) return response({ id: 'report-1', status: 'queued', phase: 'queued', chartProfileId: 'chart-profile-1', chartVersionId: 'chart-version-1', residenceProfileId: 'residence-profile-1', residenceVersionId: 'residence-version-1' }, 202)
+      if (value.endsWith('/v1/reports/report-1')) return response(completedReport())
+      if (value.endsWith('/v1/reports/report-1/share')) return response({ token: 'share-token', expiresAt: '2026-09-04T00:00:00.000Z' })
+      if (value.endsWith('/v1/shared-reports/report-1')) return response(completedReport())
+      return response({ error: 'unexpected' }, 500)
+    }
+
+    const result = await runReportE2eSmoke({
+      env: {
+        PATH: '/bin',
+        RUN_REPORT_E2E: '1',
+        REPORT_E2E_USERNAME: 'demo-user',
+        REPORT_E2E_PASSWORD: 'demo-password',
+        REPORT_E2E_POLL_ATTEMPTS: '1',
+        REPORT_E2E_POLL_INTERVAL_MS: '1',
+      },
+      fetchFn,
+      sleep: async () => {},
+      log: () => {},
+    })
+
+    assert.equal(result.skipped, false)
+    const login = calls.find((call) => call.url.endsWith('/v1/auth/login'))
+    assert.deepEqual(JSON.parse(login.options.body), { username: 'demo-user', password: 'demo-password' })
+    const media = calls.find((call) => call.url.endsWith('/v1/media'))
+    assert.equal(new Headers(media.options.headers).get('cookie'), 'fengshui_user_session=user-session')
+    const created = calls.find((call) => call.url.endsWith('/v1/reports'))
+    assert.equal(new Headers(created.options.headers).get('cookie'), 'fengshui_user_session=user-session')
+  })
+
+  it('can create the smoke user through an admin token before logging in', async () => {
+    const calls = []
+    let loginAttempts = 0
+    const fetchFn = async (url, options = {}) => {
+      calls.push({ url: String(url), options })
+      const value = String(url)
+      if (value.endsWith('/ready/report')) return response({ status: 'ready' })
+      if (value.endsWith('/v1/bazi-rule-profile-versions/active')) return response([{ key: 'demo-traditional-solar-time', versionId: 'demo-profile-v2' }])
+      if (value.endsWith('/v1/auth/login')) {
+        loginAttempts += 1
+        if (loginAttempts === 1) return response({ error: 'invalid credentials' }, 401)
+        return response({ authenticated: true }, 200, { 'set-cookie': 'fengshui_user_session=new-user-session; Path=/' })
+      }
+      if (value.endsWith('/v1/admin/users')) return response({ user: { id: 'user-1' } }, 201)
+      if (value.endsWith('/v1/media')) return response({ fileId: 'demo-image.png' }, 201)
+      if (value.endsWith('/v1/reports')) return response({ id: 'report-1', status: 'queued', phase: 'queued', chartProfileId: 'chart-profile-1', chartVersionId: 'chart-version-1', residenceProfileId: 'residence-profile-1', residenceVersionId: 'residence-version-1' }, 202)
+      if (value.endsWith('/v1/reports/report-1')) return response(completedReport())
+      if (value.endsWith('/v1/reports/report-1/share')) return response({ token: 'share-token', expiresAt: '2026-09-04T00:00:00.000Z' })
+      if (value.endsWith('/v1/shared-reports/report-1')) return response(completedReport())
+      return response({ error: 'unexpected' }, 500)
+    }
+
+    const result = await runReportE2eSmoke({
+      env: {
+        PATH: '/bin',
+        RUN_REPORT_E2E: '1',
+        REPORT_E2E_USERNAME: 'fresh-user',
+        REPORT_E2E_PASSWORD: 'fresh-password',
+        REPORT_E2E_CREATE_USER: '1',
+        REPORT_E2E_ADMIN_TOKEN: 'admin-token-value',
+        REPORT_E2E_POLL_ATTEMPTS: '1',
+        REPORT_E2E_POLL_INTERVAL_MS: '1',
+      },
+      fetchFn,
+      sleep: async () => {},
+      log: () => {},
+    })
+
+    assert.equal(result.skipped, false)
+    const adminCreate = calls.find((call) => call.url.endsWith('/v1/admin/users'))
+    assert.equal(new Headers(adminCreate.options.headers).get('authorization'), 'Bearer admin-token-value')
+    assert.deepEqual(JSON.parse(adminCreate.options.body), {
+      username: 'fresh-user',
+      displayName: '报告验收用户',
+      password: 'fresh-password',
+    })
+    assert.equal(loginAttempts, 2)
+    const media = calls.find((call) => call.url.endsWith('/v1/media'))
+    assert.equal(new Headers(media.options.headers).get('cookie'), 'fengshui_user_session=new-user-session')
+  })
+
+  it('explains auth-required media uploads when no owner session is available', async () => {
+    const fetchFn = async (url) => {
+      const value = String(url)
+      if (value.endsWith('/ready/report')) return response({ status: 'ready' })
+      if (value.endsWith('/v1/bazi-rule-profile-versions/active')) return response([{ key: 'demo-traditional-solar-time', versionId: 'demo-profile-v2' }])
+      if (value.endsWith('/v1/media')) return response({ error: 'authentication required' }, 401)
+      return response({ error: 'unexpected' }, 500)
+    }
+
+    await assert.rejects(
+      () => runReportE2eSmoke({
+        env: { PATH: '/bin', RUN_REPORT_E2E: '1' },
+        fetchFn,
+        sleep: async () => {},
+        log: () => {},
+      }),
+      /set REPORT_E2E_USERNAME\/REPORT_E2E_PASSWORD or REPORT_E2E_COOKIE/u,
+    )
+  })
+
   it('accepts a natural mixed conclusion expressed as a generally compatible home with a shortcoming', () => {
     const report = completedReport()
     report.report = OPEN_FORMAT_MIXED_REPORT_BODY

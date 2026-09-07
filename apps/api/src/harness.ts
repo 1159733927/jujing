@@ -1272,16 +1272,17 @@ function structuredCompatibilityActions(record: ReportRecord, kinds?: ReadonlySe
   const compatibility = record.compatibility
   if (!compatibility?.assessable) return []
   const seen = new Set<string>()
+  const phrase = (value: string) => sanitizeEvidenceText(value).replace(/[。！？；;\s]+$/u, '')
   return [...compatibility.positiveMatches, ...compatibility.conflicts]
     .flatMap((point) => (point.actions ?? []).map((action) => ({
       kind: action.kind,
-      location: sanitizeEvidenceText(action.location),
-      action: sanitizeEvidenceText(action.action),
-      intendedEffect: sanitizeEvidenceText(action.intendedEffect),
+      location: phrase(action.location),
+      action: phrase(action.action),
+      intendedEffect: phrase(action.intendedEffect),
     })))
     .filter((action) => !kinds || kinds.has(action.kind))
     .filter((action) => action.location && action.action && action.intendedEffect)
-    .map((action) => `- 在${action.location}，${action.action} 这样做是为了${action.intendedEffect}`)
+    .map((action) => `- 在${action.location}，${action.action}，目的：${action.intendedEffect}。`)
     .filter((line) => {
       if (seen.has(line)) return false
       seen.add(line)
@@ -1295,11 +1296,22 @@ function appendStructuredActions(report: string, record: ReportRecord): string {
   const requiredKinds = new Set<'amplify' | 'mitigate'>()
   if (compatibility?.positiveMatches.some((point) => point.actions?.some((action) => action.kind === 'amplify'))) requiredKinds.add('amplify')
   if (compatibility?.conflicts.some((point) => point.actions?.some((action) => action.kind === 'mitigate'))) requiredKinds.add('mitigate')
+  const allStructuredActions = structuredCompatibilityActions(record)
+  const alreadyCoversRequiredActions = requiredKinds.size > 0
+    && [...requiredKinds].every((kind) => reportHasUsefulConsumerAction(report, kind))
+    && reportUsefulConsumerActionCount(report) >= 2
+  if (allStructuredActions.length >= 2 && (REPORT_ACTION_SECTION_PRESENT.test(report) || !alreadyCoversRequiredActions)) {
+    const section = `\n\n## 可以先这样做\n\n${allStructuredActions.join('\n')}\n${LOW_RISK_ACTION_NOTICE}\n`
+    const baseReport = removeConsumerActionSections(report)
+    return baseReport.includes(CULTURAL_USE_NOTICE)
+      ? baseReport.replace(CULTURAL_USE_NOTICE, `${section}\n${CULTURAL_USE_NOTICE}`)
+      : `${baseReport.trim()}${section}`
+  }
   const missingKinds = new Set([...requiredKinds].filter((kind) => !reportHasUsefulConsumerAction(report, kind)))
   const renderedActionCount = reportUsefulConsumerActionCount(report)
   const actions = missingKinds.size || renderedActionCount < 2
     ? structuredCompatibilityActions(record, missingKinds.size ? missingKinds : undefined)
-    : structuredCompatibilityActions(record)
+    : allStructuredActions
   if (!actions.length) return report
   if (!missingKinds.size && renderedActionCount >= 2 && reportHasUsefulConsumerAction(report)) return report
   const novelActions = actions.filter((action) => !report.includes(action.replace(/^-\s*/u, '')))
@@ -1329,6 +1341,8 @@ const REPORT_ACTION_SECTION = new RegExp(
   `(?:^|\\n)\\s*${REPORT_ACTION_SECTION_HEADING}\\s*(?:\\n|$)[\\s\\S]*?(?=(?:\\n\\s*#{1,6}\\s+|\\n\\s*${CULTURAL_USE_NOTICE}|$))`,
   'gu',
 )
+const REPORT_ACTION_SECTION_PRESENT = new RegExp(`(?:^|\\n)\\s*${REPORT_ACTION_SECTION_HEADING}\\s*(?:\\n|$)`, 'u')
+const LOW_RISK_ACTION_NOTICE = '以上建议都只涉及低成本、可撤销的日常布置调整。'
 
 function removeConsumerActionSections(report: string): string {
   return report

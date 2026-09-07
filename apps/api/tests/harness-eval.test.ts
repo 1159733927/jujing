@@ -188,7 +188,7 @@ ${CULTURAL_USE_NOTICE}`
 
     expect(result.generationProvenance).toMatchObject({ validatorResult: 'pass' })
     expect(result.report).toContain('## 可以先这样做')
-    expect(result.report).toContain('在客厅南侧采光面，保留窗边通透，避免高大家具挡住主要光线。 这样做是为了放大南向采光对丙火日主的呼应。')
+    expect(result.report).toContain('在客厅南侧采光面，保留窗边通透，避免高大家具挡住主要光线，目的：放大南向采光对丙火日主的呼应。')
   })
 
   it('rewrites internal analysis terms into consumer language before delivery', async () => {

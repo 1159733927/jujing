@@ -22,7 +22,7 @@ import {
 } from './lunar-year-profile'
 import './styles.css'
 
-export const CURRENT_REPORT_VALIDATOR_VERSION = 'generated-report-validator-v18-consumer-action-gate'
+export const CURRENT_REPORT_VALIDATOR_VERSION = 'generated-report-validator-v19-practical-lead-gate'
 
 type Direction = 'north' | 'east' | 'south' | 'west' | 'unknown'
 type Room = 'overview' | 'living-room' | 'bedroom' | 'kitchen' | 'bathroom' | 'entrance' | 'other'

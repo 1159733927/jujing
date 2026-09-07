@@ -46,7 +46,7 @@ function compatibility(
 
 function consumerReport(parts: Partial<Record<'opening' | 'positive' | 'conflict' | 'action' | 'unknown', string>> = {}): string {
   return [
-    parts.opening ?? '结论先说：这套房子和这个命盘整体偏合拍，可以作为候选房继续看。',
+    parts.opening ?? '结论先说：这套房子和这个命盘整体偏合拍，最大加分项是南向客厅，可以先保住这块采光优势。',
     parts.positive ?? '最加分的是南向客厅。南向客厅与丙火日主形成采光和火性呼应。命盘依据：日主为丙火，四柱完整。住宅依据：客厅在住宅南侧，照片标注镜头朝南。',
     parts.conflict ?? '目前没有看到会直接拉低匹配度的核心冲突点。',
     `## 可以先这样做\n${parts.action ?? '建议在客厅南侧采光面保留窗边通透，先把高大家具移开一点，这样是为了放大南向采光对丙火日主的呼应。'}`,
@@ -103,7 +103,7 @@ describe('consumer report quality baseline', () => {
       level: 'attention' as const,
     }
     const report = consumerReport({
-      opening: '结论先说：这套房子和这个命盘目前偏不合拍，最大问题在房屋中心附近的卫生间。',
+      opening: '结论先说：这套房子和这个命盘目前偏不合拍，最大短板在房屋中心附近的卫生间。',
       positive: '本次没有形成能够抵消该问题的核心合拍点。',
       conflict: '中宫附近卫生间与命盘稳定需求存在冲突。命盘候选需求强调空间稳定和少扰动；户型图显示卫生间靠近住宅中心区域。',
       action: '建议在卫生间门口不要堆放清洁杂物，并加强日常除湿照明，这样是为了减少近中宫卫生间对稳定需求的冲突。',
@@ -117,7 +117,7 @@ describe('consumer report quality baseline', () => {
 
   it('accepts an insufficient-evidence report that refuses a strong conclusion and asks for the one missing input', () => {
     const report = consumerReport({
-      opening: '结论先说：现在证据不足，不能判断这套房子和命盘是否合拍。',
+      opening: '结论先说：现在证据不足，不能判断这套房子和命盘是否合拍，先补住宅朝向再看加分和短板。',
       positive: '不是说这套房子不好，而是户型图没有标清朝向，住宅方位无法和命盘稳定对应。',
       conflict: '因此本次不做强结论，也不把普通采光、通风当成命盘匹配依据。',
       action: '建议先补一张带上北下南标记的户型图，或在照片备注里确认入户门和客厅窗的实际朝向。',

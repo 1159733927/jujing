@@ -11,7 +11,7 @@ export class ReportE2eSmokeError extends Error {
   }
 }
 
-export const CURRENT_REPORT_VALIDATOR_VERSION = 'generated-report-validator-v18-consumer-action-gate'
+export const CURRENT_REPORT_VALIDATOR_VERSION = 'generated-report-validator-v19-practical-lead-gate'
 const PLAIN_CODE_LINE = /(?:^|\n)\s*(?:import\s+[\w*{]|export\s+(?:const|function|class|default|type|interface)|(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=|(?:async\s+)?function\s+[A-Za-z_$][\w$]*\s*\(|class\s+[A-Za-z_$][\w$]*\s*[{<]|interface\s+[A-Za-z_$][\w$]*\s*[{<]|type\s+[A-Za-z_$][\w$]*\s*=|return\s+(?:\{|\(|["']))/u
 const CONSUMER_PROCESS_LANGUAGE = /(?:程序事实|程序口径|程序给出|程序显示|服务端|视觉分析|结构化(?:判断|数据|基线)|生成过程|测试档案|测试数据|QA|provenance|validator|pipeline|prompt|schema|审核\s*Agent|质检\s*Agent|模型推断|AI\s*传统术数推断|非专家库)/iu
 const USER_FACING_INTERNAL_ANALYSIS_LANGUAGE = /(?:扶抑基线|程序合参基线|人宅合参演示基线|候选方向|候选补益方向|候选平衡方向|补益方向)/u
@@ -19,6 +19,7 @@ const HTML_TAG = /<\/?[a-z][\w:-]*(?:\s+[^<>]*)?>/iu
 const MARKDOWN_TABLE_LINE = /(?:^|\n)\s*\|[^|\n]+(?:\|[^|\n]+)+\|\s*(?:$|\n)/u
 const GENERIC_REPORT_PREFACE = /^(?:以下是|下面是|这是|本文将|本报告将|为您出具|本次报告将)/u
 const CONCLUSION_FIRST_OPENING = /^结论先说[:：]/u
+const LEAD_PRACTICAL_JUDGMENT = /(?:加分|优点|优势|短板|扣分|冲突|最该|先做|保住|放大|减少|减轻|缓解)/u
 const BACKOFFICE_SECTION_TITLE = /(?:^|\n)\s*#{1,6}\s*(?:判断前提与可信度|命盘需要|住宅属性|依据与版本|引用依据|资料来源|资料清单|规则清单|版本清单|待确认信息|证据不足清单)\s*(?:\n|$)/u
 const USER_ACTION_SECTION = /(?:^|\n)\s*(?:#{1,6}\s*)?(?:\*\*)?(?:可以先这样做|你可以先这样做|建议先这样做|先做这几件事|接下来可以这样做)(?:\*\*)?\s*[:：]?\s*(?:\n|$)/u
 const USER_ACTION_SECTION_TITLE = /(?:^|\n)\s*(?:#{1,6}\s*)?(?:\*\*)?(?:可以先这样做|你可以先这样做|建议先这样做|先做这几件事|接下来可以这样做)(?:\*\*)?\s*[:：]?\s*(?:\n|$)/gu
@@ -82,6 +83,10 @@ function usefulRenderedActionCount(text, expectedKind) {
 
 function userActionSectionCount(text) {
   return [...String(text ?? '').matchAll(USER_ACTION_SECTION_TITLE)].length
+}
+
+function firstParagraph(text) {
+  return String(text ?? '').split(/\n\s*\n/u).find((paragraph) => paragraph.trim())?.trim() ?? ''
 }
 
 function hasAffirmativeSouthBalconyMention(text) {
@@ -277,6 +282,9 @@ export function assertHumanReadableReport(report, expectedBindings = {}) {
   if (/```/u.test(text)) throw new ReportE2eSmokeError('completed report contains a code fence')
   if (GENERIC_REPORT_PREFACE.test(text.trim())) throw new ReportE2eSmokeError('completed report starts with a generic AI-style preface')
   if (!CONCLUSION_FIRST_OPENING.test(text.trim())) throw new ReportE2eSmokeError('completed report does not open with a direct consumer conclusion')
+  if (!LEAD_PRACTICAL_JUDGMENT.test(firstParagraph(text))) {
+    throw new ReportE2eSmokeError('completed report lead paragraph has no practical advantage, drawback or next action')
+  }
   if (BACKOFFICE_SECTION_TITLE.test(text)) throw new ReportE2eSmokeError('completed report exposes a back-office source or pending checklist section')
   if (userActionSectionCount(text) > 1) throw new ReportE2eSmokeError('completed report repeats its consumer action section')
   if (PLAIN_CODE_LINE.test(text)) throw new ReportE2eSmokeError('completed report contains plain source code')

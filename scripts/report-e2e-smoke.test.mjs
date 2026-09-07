@@ -649,8 +649,24 @@ describe('report e2e smoke verifier', () => {
       residenceVersionId: base.residenceVersionId,
     }
     assert.throws(
-      () => assertHumanReadableReport({ ...base, report: base.report.replace(CONCLUSION, '结论先说：这里汇总了本次分析结果，请结合实际情况理解。') }, expectedBindings),
+      () => assertHumanReadableReport({
+        ...base,
+        report: base.report.replace(
+          CONCLUSION,
+          '结论先说：本报告会说明加分项、短板和先做动作，请结合实际情况理解。',
+        ),
+      }, expectedBindings),
       /clear overall/u,
+    )
+    assert.throws(
+      () => assertHumanReadableReport({
+        ...base,
+        report: base.report.replace(
+          `${CONCLUSION} 你的命盘当前更需要稳定的土性支持；户型整体朝南，南侧厨房能提供一定助力，但卫生间靠近房屋中心，会削弱中央区域的稳定感。`,
+          '结论先说：这套房和你的命盘局部合拍。命盘当前有稳定土性相关信息；户型整体朝南，厨房位于南侧，卫生间靠近房屋中心。',
+        ),
+      }, expectedBindings),
+      /lead paragraph/u,
     )
     assert.throws(
       () => assertHumanReadableReport({ ...base, report: base.report.replaceAll('稳定的土性', '相关力量').replaceAll('稳定土性', '相关力量') }, expectedBindings),

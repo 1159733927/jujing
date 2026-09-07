@@ -109,6 +109,20 @@ describe('semantic report validation', () => {
     expect(validateGeneratedReport(report(), { citations: [citation], compatibility })).toContain('偏合拍')
   })
 
+  it('rejects an assessable report whose lead paragraph has no practical judgment', () => {
+    expectFailure(
+      report({
+        conclusion: [
+          '本套住宅与该命盘偏合拍。',
+          '命盘日主为丙火，四柱完整；住宅朝南，客厅照片标注镜头朝南。',
+          '正文后面会继续说明原因和处理方式。',
+        ].join('\n'),
+      }),
+      { citations: [citation], compatibility },
+      'assessable report lead paragraph lacks a practical advantage, drawback or next action',
+    )
+  })
+
   it('accepts a clear consumer conclusion without requiring a fixed 总体判断 label', () => {
     expect(validateGeneratedReport(report({
       conclusion: [

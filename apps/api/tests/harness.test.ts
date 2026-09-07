@@ -412,7 +412,8 @@ describe('Harness command boundary', () => {
 
     expect(prompt).toContain('不得因没有固定标题、固定篇幅或固定条数而扣分')
     expect(prompt).toContain('不得伪造、夸大或混淆资料、规则和模型推断的来源')
-    expect(prompt).toContain('若堆叠术语、反复同一意思')
+    expect(prompt).toContain('首段没有实际加分、短板、冲突或最该先做的动作')
+    expect(prompt).toContain('堆叠术语、反复同一意思')
     expect(prompt).toContain('如何放大已识别的优点、减少已识别的缺点')
     expect(prompt).toContain('拆墙、改承重结构')
     expect(prompt).toContain('应标 high')

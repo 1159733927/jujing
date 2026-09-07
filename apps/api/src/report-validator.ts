@@ -1,7 +1,7 @@
 import type { BaziAssessmentName, ProfessionalAssessmentResult, ReportGenerationProvenance, ReportRecord } from '@fengshui/domain'
 
 export const CULTURAL_USE_NOTICE = '仅供传统文化与娱乐参考，不构成医疗、法律、财务或重大人生决定建议。'
-export const REPORT_VALIDATOR_VERSION = 'generated-report-validator-v18-consumer-action-gate'
+export const REPORT_VALIDATOR_VERSION = 'generated-report-validator-v19-practical-lead-gate'
 
 const ACTIONABLE_HIGH_STAKES_ADVICE = /(?<!不)(?<!无须)(?<!无需)(?:建议|应该|应当|必须|务必|需要|最好)[^。；\n]{0,24}(?:就医|治疗|诊断|用药|停药|手术|诉讼|起诉|签约|投资|理财|买入|卖出|贷款|借款|结婚|离婚|生育|怀孕|辞职|退学|搬家)/u
 const CERTAIN_HIGH_STAKES_PREDICTION = /(?<!不)(?<!并非)(?<!未必)(?<!不能)(?:注定|必然|一定(?:会|能|将)|肯定(?:会|能)|保证会|绝对会)[^。；\n]{0,32}(?:发财|破财|患病|生病|离婚|结婚|怀孕|升职|失业|死亡|成功|失败)/u
@@ -30,6 +30,7 @@ const BACKOFFICE_SOURCE_SECTION = /(?:^|\n)\s*#{1,6}\s*(?:依据与版本|引用
 const USER_ACTION_SECTION_TITLE = /(?:^|\n)\s*(?:#{1,6}\s*)?(?:\*\*)?(?:可以先这样做|你可以先这样做|建议先这样做|先做这几件事|接下来可以这样做)(?:\*\*)?\s*[:：]?\s*(?:\n|$)/gu
 const PENDING_FILLER_PHRASE = /待确认|信息不足|证据不足|后续(?:再|继续)?(?:看|确认|补充|复核)|需要(?:补充|确认|进一步|再看)|暂时(?:看不清|无法)|不能判断|无法判断/u
 const CONCLUSION_FIRST_PREFIX = /^结论先说：/u
+const LEAD_PRACTICAL_JUDGMENT = /(?:加分|优点|优势|短板|扣分|冲突|最该|先做|保住|放大|减少|减轻|缓解)/u
 const CONSUMER_UNHELPFUL_SECTION = /(?:^|\n)\s*#{1,6}\s*(?:判断前提与可信度|命盘需要|住宅属性|待确认信息|信息不足|证据不足|待补充|还需要确认|依据与版本|引用依据|资料来源|资料清单|规则清单|版本清单)\s*(?:\n|$)/u
 const SOUTH_BALCONY_MENTION = /(?:南(?:侧|向|方)[^\n。；;，,]{0,16}阳台|阳台[^\n。；;，,]{0,16}(?:在|位于|处于|朝|向|靠)?南(?:侧|向|方)?)/u
 const NEGATED_SPATIAL_FACT = /(?:不|未|无|没有|不能|无法|不得|不可|缺少|看不出|待确认|需要确认|不能推断|不要推断)/u
@@ -252,6 +253,10 @@ function userActionSectionCount(normalized: string): number {
   return [...normalized.matchAll(USER_ACTION_SECTION_TITLE)].length
 }
 
+function firstParagraph(normalized: string): string {
+  return normalized.split(/\n\s*\n/u).find((paragraph) => paragraph.trim())?.trim() ?? ''
+}
+
 function hasAffirmativeSouthBalconyMention(text: string): boolean {
   return text
     .split(/[。！？；;\n]+/u)
@@ -300,6 +305,9 @@ function validateSemanticCompatibility(normalized: string, record: ReportValidat
   }
   if (!CONCLUSION_FIRST_PREFIX.test(normalized)) {
     reasons.push('assessable report must start with 结论先说')
+  }
+  if (!LEAD_PRACTICAL_JUDGMENT.test(firstParagraph(normalized))) {
+    reasons.push('assessable report lead paragraph lacks a practical advantage, drawback or next action')
   }
   if (CONSUMER_UNHELPFUL_SECTION.test(normalized)) {
     reasons.push('assessable report contains user-unhelpful template sections')
